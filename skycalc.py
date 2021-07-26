@@ -137,6 +137,7 @@ def mond_emoji(phase:float)->str:
         range(0, 360, 45)):
         if abs((phase-p)) < 22.5:
              return big_emoji(s)
+    return big_emoji("&#127761")
 
 def mond_url()->str:
     return "https://theskylive.com/moon-info"
@@ -298,13 +299,14 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ya+=["Kulmination" for yi in y]
     for ti, yi in zip(ta, ya):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
+        phase = mondphase(ti)
         if alt.degrees < 0 and yi=="Kulmination":
             continue
         this = dict()
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
                        mond_darstell(ti),
-                       f"<b>{yi}</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}<b>h:{SPACE}{runde(alt.degrees, 0, 3)}º</b><br>Phase:{SPACE}{runde(mondphase(ti), 1, 5)}º<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}")
+                       f"<b>{yi}</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}<b>h:{SPACE}{runde(alt.degrees, 0, 3)}º</b><br>Phase:{SPACE}{runde(phase, 1, 5)}º{SPACE*2}Beleuchtet:{SPACE}{runde(min(phase, 360-phase), 1, 5)}º<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}")
         ret.append(this)
 
     return ret
