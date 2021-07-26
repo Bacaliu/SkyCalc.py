@@ -523,7 +523,8 @@ def calsky(dt0:datetime, dt1:datetime, lat:float, lon:float, elev:float, name:st
     h += "</head>"
     h += '<body>'
     h += f'<h1>Astronomische Ereignisse für {round(lat, 2)}ºN, {round(lon, 2)}ºE</h1>'
-    h += f"<h3>Daten von {dt0.strftime('%Y-%m-%d um %Hh%Mm%Ss')}</h3>"
+    h += f"<h3>{dt0.strftime('%A, %Y-%m-%d %Hh')} bis {dt1.strftime('%A, %Y-%m-%d %Hh')}</h3>"
+    h += f"Errechnet {datetime.now().strftime('%Y-%m-%d um %Hh%Mm%Ss %Hh%Mm%Ss')}"
     h += f"{table_head}"
     h += f"{table_caption(dt0)}"
     for i, t in enumerate(tab):
@@ -544,6 +545,7 @@ def main():
     dur = 24
     sat_mag = 5
     op = False
+    start = datetime.now().astimezone(TZ).replace(second=0, minute=0, hour = 0)
     for i, arg in enumerate(sys.argv):
         if arg == "-dur":
             dur = int(sys.argv[i+1])
@@ -552,9 +554,11 @@ def main():
             sat = VISUAL
         if arg == "-open":
             op = True
+        if arg == "-start":
+            start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d").astimezone(TZ)
 
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
-    calsky(datetime.now(TZ), datetime.now(TZ)+timedelta(hours = dur),51.86,7.49,60,"table", sat, sat_mag = sat_mag)
+    calsky(start, start+timedelta(hours = dur),51.86,7.49,60,"table", sat, sat_mag = sat_mag)
     if op:
         os.system(f"{BROWSER} {PATH}/table.html")
 

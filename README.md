@@ -31,8 +31,8 @@ Das definiert welcher Browser zum öffnen der Tabelle verwendet wird. Natürlich
 ## Nutzerschnittstelle
 Ohne Parameter erzeugt es die Tabelle in ```table.html``` im gleichen Ordner in dem es sich befindet.
 
-### Parameter -open
-``./skycalc.py -open`` öffnet die Tabelle nach dem Erstellen im angegebenen Browser.
+### Parameter -start [%Y-%m-%d]
+`./skycalc.py -start 2021-01-05` setzt den Starttermin auf den fünften Januar 2021. Standartmäßig ist es der Zeitpunkt jetzt
 
 ### Parameter -dur [int]
 `./skycalc.py -dur 48` gibt die Anzahl der Stunden zu 48 an, bis zu der in Zukunft gerechnet wird. Standartmäßig sind es 24.
@@ -42,4 +42,7 @@ Ohne Parameter erzeugt es die Tabelle in ```table.html``` im gleichen Ordner in 
 
 ### Parameter -sat-mag [float]
 `./skycalc.py -sat-mag 4` aktiviert die Berechnung und Anzeige von Satellitenüberflügen UND setzt die Helligkeit nach der gefiltert wird auf 4 magnituden. Satelliten, die während des Überfluges immer dunkler sind werden also nicht geplottet und nicht dargestellt. Standartmäßig ist diese Grenze bei 5.
+
+### Parameter -open
+``./skycalc.py -open`` öffnet die Tabelle nach dem Erstellen im angegebenen Browser.
 
