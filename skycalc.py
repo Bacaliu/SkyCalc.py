@@ -277,50 +277,34 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ort, ortE = position(lon, lat)
 
     ret = []
-    t, y = almanac.find_discrete(ts0, ts1, almanac.moon_phases(EPH))
+    ta = list()
+    ya = list()
     ## PHASEN
-    for ti, yi in zip(t, y):
-        alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
-        this = dict()
-        this["dt"] = ti.utc_datetime()
-        this["html"] = html_row(
-            ptime(ti.utc_datetime()),
-            mond_darstell(ti),
-            f"{almanac.MOON_PHASES[yi]}<br>{alt}{SPACE*2}{az}")
-        ret.append(this)
-    
-    t, y = almanac.find_discrete(ts0, ts1, almanac.moon_nodes(EPH))
+    t, y = almanac.find_discrete(ts0, ts1, almanac.moon_phases(EPH))
+    ta+=t
+    ya+=[almanac.MOON_PHASES[yi] for yi in y]
     ## NODES
-    for ti, yi in zip(t, y):
-        alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
-        this = dict()
-        this["dt"] = ti.utc_datetime()
-        this["html"] = html_row(ptime(ti.utc_datetime()),
-                                mond_darstell(ti),
-                                f"{almanac.MOON_NODES[yi]}{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}h:{SPACE}{runde(alt.degrees, 0, 3)}º<br>Phase:{SPACE}{runde(mondphase(ti), 1, 5)}º<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}")
-        ret.append(this)
-
-    t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ort))
+    t, y = almanac.find_discrete(ts0, ts1, almanac.moon_nodes(EPH))
+    ta+=t
+    ya+=[almanac.MOON_NODES[yi] for yi in y]
     ## AUF UNTER
-    for ti, yi in zip(t, y):
-        alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
-        this = dict()
-        this["dt"] = ti.utc_datetime()
-        this["html"] = html_row(ptime(ti.utc_datetime()),
-                       mond_darstell(ti), f"{'Aufgang'+SPACE*4 if yi else 'Untergang'+SPACE*2}{SPACE*2}az:{SPACE}{runde(az.degrees, 1, 5)}º{SPACE}{rich(az.degrees)}{SPACE*2}<br>Phase:{SPACE}{runde(mondphase(ti), 1, 5)}º<br>RA: {ra}{SPACE*2}DEC: {dec}{SPACE*2}")
-        ret.append(this)
-
-
-    t, y = searchlib.find_maxima(ts0, ts1, altF)
+    t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ort))
+    ta+=t
+    n = ["Untergang", f"Aufgang{SPACE*2}"]
+    ya+=[n[yi] for yi in y]
     ## Kulmination
-    for ti, yi in zip(t, y):
+    t, y = searchlib.find_maxima(ts0, ts1, altF)
+    ta+=t
+    ya+=["Kulmination" for yi in y]
+    for ti, yi in zip(ta, ya):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
-        if alt.degrees < 0: continue
+        if alt.degrees < 0 and yi=="Kulmination":
+            continue
         this = dict()
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
                        mond_darstell(ti),
-                       f"<b>Kulmination</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}<b>h:{SPACE}{runde(alt.degrees, 0, 3)}º</b><br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}Phase:{SPACE}{runde(mondphase(ti), 1, 5)}º")
+                       f"<b>{yi}</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}<b>h:{SPACE}{runde(alt.degrees, 0, 3)}º</b><br>Phase:{SPACE}{runde(mondphase(ti), 1, 5)}º<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}")
         ret.append(this)
 
     return ret
@@ -333,11 +317,13 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     ort, ortE = position(lon, lat)
     ret = []
 
-    for planet in ["MERCURY", "VENUS", "MARS", "JUPITER_BARYCENTER", "SATURN_BARYCENTER", "URANUS_BARYCENTER", "NEPTUNE_BARYCENTER"]:
+    for planet in ["MERCURY", "VENUS", "MARS", "JUPITER_BARYCENTER",
+            "SATURN_BARYCENTER", "URANUS_BARYCENTER", "NEPTUNE_BARYCENTER"]:
         t = list()
         y = list()
 
-        ta, ya = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH[f'{planet}'], ort))
+        ta, ya = almanac.find_discrete(ts0, ts1,
+            almanac.risings_and_settings(EPH, EPH[f'{planet}'], ort))
 
         n = ["Untergang", f"Aufgang{SPACE*2}"]
         t+=ta
@@ -365,8 +351,20 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     return ret
 
 def sonne_events(ts0, ts1, lon:float, lat:float):
-    dämmerungen = ["Nacht", "Astronomische Dämmerung", "Nautische Dämmerung", "Bürgerliche Dämmerung", "Tag"]
-    dämbesch = [["", "Es ist maximal Dunkel", "Sternenbilder werden sichtbar", "helle Sterne und Planeten tauchen auf", ""], ["", "schwache Sterne verblassen", "Sternenbilder lösen sich auf", "helle Sterne und Planeten verblassen", ""]]
+    dämmerungen = [
+        "Nacht", "Astronomische Dämmerung", "Nautische Dämmerung",
+        "Bürgerliche Dämmerung", "Tag"
+    ]
+    dämbesch = [
+        [
+            "", "Es ist maximal Dunkel", "Sternenbilder werden sichtbar",
+            "helle Sterne und Planeten tauchen auf", ""
+        ],
+        [
+            "", "schwache Sterne verblassen", "Sternenbilder lösen sich auf",
+            "helle Sterne und Planeten verblassen", ""
+        ]
+    ]
     ort, ortE = position(lon, lat)
     ret = []
     
