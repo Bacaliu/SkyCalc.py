@@ -555,7 +555,7 @@ def main():
         if arg == "-open":
             op = True
         if arg == "-start":
-            start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d").astimezone(TZ)
+            start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone(TZ)
 
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
     calsky(start, start+timedelta(hours = dur),51.86,7.49,60,"table", sat, sat_mag = sat_mag)

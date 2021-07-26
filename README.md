@@ -32,7 +32,7 @@ Das definiert welcher Browser zum öffnen der Tabelle verwendet wird. Natürlich
 Ohne Parameter erzeugt es die Tabelle in ```table.html``` im gleichen Ordner in dem es sich befindet.
 
 ### Parameter -start [%Y-%m-%d]
-`./skycalc.py -start 2021-01-05` setzt den Starttermin auf den fünften Januar 2021. Standartmäßig ist es der Zeitpunkt jetzt
+`./skycalc.py -start 2021-01-05-00` setzt den Starttermin auf den fünften Januar 2021. Standartmäßig ist es der Zeitpunkt heute, 0 Uhr. Die Stunde muss zwingend auch angegeben werden.
 
 ### Parameter -dur [int]
 `./skycalc.py -dur 48` gibt die Anzahl der Stunden zu 48 an, bis zu der in Zukunft gerechnet wird. Standartmäßig sind es 24.
