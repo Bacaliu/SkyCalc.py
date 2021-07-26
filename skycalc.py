@@ -25,6 +25,8 @@ EPH = load('de421.bsp')
 ## Einstellungen - bei Bedarf bearbeiten | Settings - set them if needed
 # PATH = Pfadt zu dieser Datei | PATH = path to this file
 PATH = "/home/adrian/Skripte/astro"
+# BROWSER = name des Browsers | BROWSER = name of the Browser
+BROWSER = "firefox"
 # Anzahl der Stunden zwischen UTC und unserer Zeitzone | number of hours between UTC and our Timezone
 TZ = timezone(timedelta(hours = 2))
 
@@ -551,7 +553,7 @@ def main():
         if arg == "-dur":
             dur = int(sys.argv[i+1])
         if arg == "-sat-mag":
-            sat_mag = int(sys.argv[i+1])
+            sat_mag = float(sys.argv[i+1])
             sat = VISUAL
         if arg == "-open":
             op = True
@@ -559,7 +561,7 @@ def main():
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
     calsky(datetime.now(TZ), datetime.now(TZ)+timedelta(hours = dur),51.86,7.49,60,"table", sat, sat_mag = sat_mag)
     if op:
-        os.system(f"firefox {PATH}/table.html")
+        os.system(f"{BROWSER} {PATH}/table.html")
 
 if __name__ == "__main__":
     main()
