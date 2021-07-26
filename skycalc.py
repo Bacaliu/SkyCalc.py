@@ -334,8 +334,19 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     ret = []
 
     for planet in ["MERCURY", "VENUS", "MARS", "JUPITER_BARYCENTER", "SATURN_BARYCENTER", "URANUS_BARYCENTER", "NEPTUNE_BARYCENTER"]:
-        t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH[f'{planet}'], ort))
-        ## AUF UNTER
+        t = list()
+        y = list()
+
+        ta, ya = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH[f'{planet}'], ort))
+
+        n = ["Untergang", f"Aufgang{SPACE*2}"]
+        t+=ta
+        y+=[n[yi] for yi in ya]
+ 
+        ta, ya = searchlib.find_maxima(ts0, ts1, altF)
+        t+=ta
+        y+=["Kulmination" for yi in ya]
+
         for ti, yi in zip(t, y):
             try:
                 m = planetary_magnitude(ortE.at(ti).observe(EPH[f'{planet}']))
@@ -343,29 +354,13 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
             except:
                 m = f"{SPACE*2}?{SPACE*2}mag"
             alt, az, ra, dec, dis = AltAzRaDecDis(EPH[planet], ti, lon, lat, elev)
-            this = dict()
-            this["dt"] = ti.utc_datetime()
-            this["html"] = html_row(ptime(ti.utc_datetime()),
-                        planet_darstell(planet),
-                        f"{'Aufgang'+SPACE*4 if yi else 'Untergang'+SPACE*2}{SPACE*2}az: {runde(az.degrees, 1, 5)}º {rich(az.degrees)}<br>{m}<br>RA: {ra}{SPACE*2}DEC: {dec}{SPACE*2}")
-            ret.append(this)
-            
-        t, y = searchlib.find_maxima(ts0, ts1, altF)
-        ## Kulmination
-        for ti, yi in zip(t, y):
-            try:
-                m = planetary_magnitude(ortE.at(ti).observe(EPH[f'{planet}']))
-                m = "<b>"+str(runde(m, 1, 4))+" mag</b>"
-            except:
-                m = f"{SPACE*2}?{SPACE*2}mag"
-            alt, az, ra, dec, dis = AltAzRaDecDis(EPH[planet], ti, lon, lat, elev)
-            if alt.degrees < 0:
+            if alt.degrees < 0 and yi == "Kulmination":
                 continue
             this = dict()
             this["dt"] = ti.utc_datetime()
             this["html"] = html_row(ptime(ti.utc_datetime()),
                         planet_darstell(planet),
-                        f"<b>Kulmination</b>{SPACE*2}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}{SPACE*2}<b>h: {runde(alt.degrees, 0, 3)}º</b><br>{m}<br>RA: {ra}{SPACE*2}DEC: {dec}")
+                        f"<b>{yi}</b>{SPACE*2}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}{SPACE*2}<b>h: {runde(alt.degrees, 0, 3)}º</b><br>{m}<br>RA: {ra}{SPACE*2}DEC: {dec}")
             ret.append(this)
     return ret
 
