@@ -290,7 +290,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ## AUF UNTER
     t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ort))
     ta+=t
-    n = ["Untergang", f"Aufgang{SPACE*2}"]
+    n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
     ya+=[n[yi] for yi in y]
     ## Kulmination
     t, y = searchlib.find_maxima(ts0, ts1, altF)
@@ -325,7 +325,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
         ta, ya = almanac.find_discrete(ts0, ts1,
             almanac.risings_and_settings(EPH, EPH[f'{planet}'], ort))
 
-        n = ["Untergang", f"Aufgang{SPACE*2}"]
+        n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
         t+=ta
         y+=[n[yi] for yi in ya]
  
