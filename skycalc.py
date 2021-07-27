@@ -297,7 +297,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
                        mond_darstell(ti),
-                       f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~{f'<b>alt:~{runde(alt.degrees, 0, 3)}</b>' if k else ''}<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:~{ra}~~DEC:~{dec}~~")
+                    f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~{'<b>' if k else ''}alt:~{runde(alt.degrees, 0, 3)}º{'</b>' if k else ''}<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:~{ra}~~DEC:~{dec}")
         ret.append(this)
 
     return ret
