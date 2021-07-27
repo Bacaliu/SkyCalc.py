@@ -215,7 +215,7 @@ def sat_darstell(sat)->str:
 ## SATELLITEN
 ######################################################################################
 def draw_sat_überflug(ax:plt.axis, e, lon:float, lat:float, elev:float,
-        tick:timedelta=timedelta(seconds=15)):
+        tick:timedelta=timedelta(seconds=15))->None:
 
     ortG, ortH = position(lon, lat, elev)
     minute = timedelta(seconds = 60)
@@ -240,7 +240,7 @@ def draw_sat_überflug(ax:plt.axis, e, lon:float, lat:float, elev:float,
                   color = c, lw = 5)
 
 
-def draw_all_sats(events, lon:float, lat:float, elev:float):
+def draw_all_sats(events, lon:float, lat:float, elev:float, name:str)->None:
     plt.rcParams['figure.figsize'] = [4.0, 4.0]
     if not os.path.exists(f"{PATH}/tmp"):
         print("Erstelle Hilfsordner für die Bilder")
@@ -258,12 +258,13 @@ def draw_all_sats(events, lon:float, lat:float, elev:float):
         draw_sat_überflug(ax, e, lon, lat, elev, tick = timedelta(seconds = 20))
         ax.grid()
         plt.tight_layout()
-        plt.savefig(f"{PATH}/tmp/sat{e['index']}.png")
+        plt.savefig(f"{PATH}/tmp/sat{name}{e['index']}.png")
         plt.cla()
 
 
 def satellite_events(satellites, ts0, ts1,
-        min_degrees:float, lon:float, lat:float, elev:float, sun_deg:float=-9, max_mag:float=4):
+        min_degrees:float, lon:float, lat:float, elev:float,
+        sun_deg:float=-9, max_mag:float=4)->None:
 
     ortG, ortH = position(lon, lat, elev)
     events = []
@@ -469,7 +470,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
     return ret
 
 
-def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
+def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, name:str)->str:
     rows = list()
     ortG, ortH = position(lon, lat, elev)
     for i, ev in enumerate(events):
@@ -507,7 +508,7 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
         rows[i]["html"] = html_row(
             ptime(rows[i]["dt"]),
             sat_darstell(ev["satellite"]),
-            f'''<img src="{PATH}/tmp/sat{ev['index']}.png" height="90" align="right">{"".join(part["text"] for part in parts)}'''.replace("\n", ""))
+            f'''<img src="{PATH}/tmp/sat{name}{ev['index']}.png" height="90" align="right">{"".join(part["text"] for part in parts)}'''.replace("\n", ""))
     return rows
 
 ###############################################################################
@@ -522,8 +523,8 @@ def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:st
     tab = list()
     if sat:
         sats = satellite_events(sat, ts0, ts1, 20, lon, lat, elev,  -6, sat_mag)
-        draw_all_sats(sats, lon, lat, elev)
-        tab += sat_events_to_html(sats, lon, lat, elev, sat_mag)
+        draw_all_sats(sats, lon, lat, elev, name)
+        tab += sat_events_to_html(sats, lon, lat, elev, sat_mag, name)
     if mond:
         tab += mond_events(ts0, ts1, lon, lat, elev)
     if planeten:
