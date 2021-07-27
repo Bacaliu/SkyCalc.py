@@ -40,6 +40,6 @@ Ohne Parameter erzeugt es die Tabelle in [Name des Ortes].html im Unterordner `h
 ### Parameter -sat-mag [float]
 `./skycalc.py -sat-mag 4` aktiviert die Berechnung und Anzeige von Satellitenüberflügen UND setzt die Helligkeit nach der gefiltert wird auf 4 magnituden. Satelliten, die während des Überfluges immer dunkler sind werden also nicht geplottet und nicht dargestellt. Standartmäßig ist diese Grenze bei 5.
 
-### Parameter -open
-``./skycalc.py -open`` öffnet die Tabelle nach dem Erstellen im angegebenen Browser.
+### Parameter -ort
+``./skycalc.py -ort Brüssel`` berechnet _nur_ die Tabelle für Brüssel, auch wenn im .config mehrere Orte angegeben wurden.
 

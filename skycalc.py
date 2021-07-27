@@ -614,6 +614,7 @@ def main():
     dur = 24
     sat_mag = 5
     op = False
+    ort = None
     start = datetime.now().astimezone().replace(second=0, minute=0)
     for i, arg in enumerate(sys.argv):
         if arg == "-dur":
@@ -621,14 +622,15 @@ def main():
         if arg == "-sat-mag":
             sat_mag = float(sys.argv[i+1])
             sat = VISUAL
-        if arg == "-open":
-            op = True
         if arg == "-start":
             start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone()
+        if arg == "-ort":
+            ort = sys.argv[i+1]
 
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
     for lon, lat, elev, name, sat_mag in readConfig():
-        calsky(start, start+timedelta(hours = dur),lon,lat,elev,name, sat, sat_mag = sat_mag)
+        if ort  == None or ort == name:
+            calsky(start, start+timedelta(hours = dur),lon,lat,elev,name, sat, sat_mag = sat_mag)
 
 if __name__ == "__main__":
     main()
