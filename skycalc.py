@@ -292,12 +292,12 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     for ti, yi in zip(ta, ya):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
         phase = planetenphase(ti, "MOON")
-
+        k = yi=="Kulmination"
         this = dict()
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
                        mond_darstell(ti),
-                       f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~alt:~{runde(alt.degrees, 0, 3)}º<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:~{ra}~~DEC:~{dec}~~")
+                       f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~{f'<b>alt:~{runde(alt.degrees, 0, 3)}</b>' if k else ''}<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:~{ra}~~DEC:~{dec}~~")
         ret.append(this)
 
     return ret
@@ -318,7 +318,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
         ta, ya = almanac.find_discrete(ts0, ts1,
             almanac.risings_and_settings(EPH, EPH[f'{planet}'], ortG))
 
-        n = [f"Untergang~~", f"Aufgang{SPACE*4}"]
+        n = [f"Untergang~~", f"Aufgang~~~~"]
         t+=ta
         y+=[n[yi] for yi in ya]
 
@@ -334,28 +334,28 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
             except:
                 m = f"~~?~~mag"
             alt, az, ra, dec, dis = AltAzRaDecDis(EPH[planet], ti, lon, lat, elev)
-
+            k = yi=="Kulmination"
             this = dict()
             this["dt"] = ti.utc_datetime()
             this["html"] = html_row(ptime(ti.utc_datetime()),
                         planet_darstell(planet),
-                        f"<b>{yi}</b>~~az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}~~alt: {runde(alt.degrees, 0, 3)}º<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%~~{m}<br>RA: {ra}~~DEC: {dec}")
+                        f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~{'<b>' if k else ''}alt:~{runde(alt.degrees, 0, 3)}º{'</b>' if k else ''}<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%~~{m}<br>RA:~{ra}~~DEC:~{dec}")
             ret.append(this)
     return ret
 
 def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
     dämmerungen = [
-        "Nacht", "Astronomische Dämmerung", "Nautische Dämmerung",
-        "Bürgerliche Dämmerung", "Tag"
+        "Nacht", "Astronomische~Dämmerung", "Nautische~Dämmerung",
+        "Bürgerliche~Dämmerung", "Tag"
     ]
     dämbesch = [
         [
-            "", "Es ist maximal Dunkel", "Sternenbilder werden sichtbar",
-            "helle Sterne und Planeten tauchen auf", ""
+            "", "Es~ist~maximal~Dunkel", "Sternenbilder~werden~sichtbar",
+            "helle~Sterne~und~Planeten~tauchen~auf", ""
         ],
         [
-            "", "schwache Sterne verblassen", "Sternenbilder lösen sich auf",
-            "helle Sterne und Planeten verblassen", ""
+            "", "schwache~Sterne~verblassen", "Sternenbilder~lösen~sich~auf",
+            "helle~Sterne~und~Planeten~verblassen", ""
         ]
     ]
     ortG, ortH = position(lon, lat, elev)
@@ -374,7 +374,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
             if e >= 4:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
-                    f"<b>Aufgang</b>{SPACE*6}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
+                    f"<b>Aufgang</b>{SPACE*6}az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
@@ -384,7 +384,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
             if e >= 3:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
-                f"<b>Untergang</b>{SPACE*4}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
+                f"<b>Untergang</b>{SPACE*4}az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
@@ -418,12 +418,12 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
                     continue
                 parts[-1]["dt"] = e["dt"]
                 parts[-1]["text"] = f"""<b>{e['Name']}{SPACE*(13-len(e['Name']))}{ptime(e['dt'])}{"</b>" if not hell else ""}~~{m_str}mag{"</b>" if hell else ""}
-                                    ~az:{runde(e['altaz'][1].degrees, 0, 4)}º {rich(e['altaz'][1].degrees)}~~"""
+                                    ~az:{runde(e['altaz'][1].degrees, 0, 4)}º~{rich(e['altaz'][1].degrees)}~~"""
                 if nicht_horizont:
-                    parts[-1]["text"] += f"{'<b>' if e['Name'] == 'Kulmination' else ''}h: {runde(e['altaz'][0].degrees, 0, 3)}º{'</b>' if e['Name'] == 'Kulmination' else ''}"
+                    parts[-1]["text"] += f"{'<b>' if e['Name'] == 'Kulmination' else ''}h:~{runde(e['altaz'][0].degrees, 0, 3)}º{'</b>' if e['Name'] == 'Kulmination' else ''}"
                 if e["Name"] == "Kulmination":
-                    parts[-1]["text"] += f"""<br>~~Distanz: {round(e['Distanz'].km, 1)}km~~Geschw.: {round(e['Geschwindigkeit'].km_per_s, 1)}km/s~~
-                    Sonne: {round(ortH.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
+                    parts[-1]["text"] += f"""<br>~~Distanz:~{round(e['Distanz'].km, 1)}km~~Geschw.:~{round(e['Geschwindigkeit'].km_per_s, 1)}km/s~~
+                    Sonne:~{round(ortH.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
                 parts[-1]["text"] += "<br>"
 
         parts.sort(key = lambda x: x["dt"])
