@@ -90,7 +90,7 @@ def rich(alt:float)->str:
                                         "W", "WNW", "NW", "NNW"]):
         if abs((alt%360)-d) < 11.25:
             return n+(SPACE*(3-len(n)))
-    return f"N{SPACE*2}"
+    return f"N~~"
 
 def mix(n:float, l:float, u:float)->float:
     return max(l, min(u, n))
@@ -113,7 +113,7 @@ def satcol(ts0, satellite, lon:float, lat:float, elev:float)->tuple:
 ####
 
 def html_row(a:str, b:str, c:str, params:str="")->str:
-    return f'<tr{params}><td style="text-align:center">{a}</td><td style="text-align:center;">{b}</td><td>{c}</td></tr>'
+    return f'<tr{params}><td style="text-align:center">{a}</td><td style="text-align:center;">{b}</td><td>{c}</td></tr>'.replace("~", SPACE)
 
 def big_emoji(emoji:str)->str:
     return f'<span style = "font-size:200%">{emoji}</span><br>'
@@ -283,7 +283,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ## AUF UNTER
     t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ortG))
     ta+=t
-    n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
+    n = [f"Untergang~~", f"Aufgang{SPACE*4}"]
     ya+=[n[yi] for yi in y]
     ## Kulmination
     t, y = searchlib.find_maxima(ts0, ts1, altF)
@@ -297,7 +297,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
                        mond_darstell(ti),
-                       f"<b>{yi}</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}alt:{SPACE}{runde(alt.degrees, 0, 3)}º<br>Phase:{SPACE}{runde(phase, 1, 5)}º{SPACE*2}Beleuchtet:{SPACE}{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}")
+                       f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~alt:~{runde(alt.degrees, 0, 3)}º<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:~{ra}~~DEC:~{dec}~~")
         ret.append(this)
 
     return ret
@@ -318,7 +318,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
         ta, ya = almanac.find_discrete(ts0, ts1,
             almanac.risings_and_settings(EPH, EPH[f'{planet}'], ortG))
 
-        n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
+        n = [f"Untergang~~", f"Aufgang{SPACE*4}"]
         t+=ta
         y+=[n[yi] for yi in ya]
 
@@ -332,14 +332,14 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
                 m = planetary_magnitude(ortH.at(ti).observe(EPH[f'{planet}']))
                 m = "<b>"+str(runde(m, 1, 4))+" mag</b>"
             except:
-                m = f"{SPACE*2}?{SPACE*2}mag"
+                m = f"~~?~~mag"
             alt, az, ra, dec, dis = AltAzRaDecDis(EPH[planet], ti, lon, lat, elev)
 
             this = dict()
             this["dt"] = ti.utc_datetime()
             this["html"] = html_row(ptime(ti.utc_datetime()),
                         planet_darstell(planet),
-                        f"<b>{yi}</b>{SPACE*2}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}{SPACE*2}alt: {runde(alt.degrees, 0, 3)}º<br>Phase:{SPACE}{runde(phase, 1, 5)}º{SPACE*2}Beleuchtet:{SPACE}{runde(min(phase, 360-phase)/1.8, 1, 5)}%{SPACE*2}{m}<br>RA: {ra}{SPACE*2}DEC: {dec}")
+                        f"<b>{yi}</b>~~az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}~~alt: {runde(alt.degrees, 0, 3)}º<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%~~{m}<br>RA: {ra}~~DEC: {dec}")
             ret.append(this)
     return ret
 
@@ -374,21 +374,21 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
             if e >= 4:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
-                    f"<b>Aufgang</b>{SPACE*6}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}")
+                    f"<b>Aufgang</b>{SPACE*6}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
-                    f"<b>{dämmerungen[e]}</b>{SPACE*2}{dämbesch[1][e]}<br>Sonnenhöhe:{SPACE}{runde(alt.degrees, 0, 3)}º")
+                    f"<b>{dämmerungen[e]}</b>~~{dämbesch[1][e]}<br>Sonnenhöhe:~{runde(alt.degrees, 0, 3)}º")
 
         else: #Sonnenuntergang
             if e >= 3:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
-                f"<b>Untergang</b>{SPACE*4}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}")
+                f"<b>Untergang</b>{SPACE*4}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
-                f"<b>{dämmerungen[e+1]}</b>{SPACE*2}{dämbesch[0][e+1]}<br>Sonnenhöhe:{SPACE}{runde(alt.degrees, 0, 3)}º")
+                f"<b>{dämmerungen[e+1]}</b>~~{dämbesch[0][e+1]}<br>Sonnenhöhe:~{runde(alt.degrees, 0, 3)}º")
         previous_e = e
 
         this["html"] += "</tr>"
@@ -411,18 +411,18 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
                     m_str = runde(m, 1, 4)
                     hell = m<sat_mag
                 except:
-                    m_str = f"{SPACE}?{SPACE*2}"
+                    m_str = f"~?~~"
                 if sl:
                     parts.append(dict())
                 else:
                     continue
                 parts[-1]["dt"] = e["dt"]
-                parts[-1]["text"] = f"""<b>{e['Name']}{SPACE*(13-len(e['Name']))}{ptime(e['dt'])}{"</b>" if not hell else ""}{SPACE*2}{m_str}mag{"</b>" if hell else ""}
-                                    {SPACE}az:{runde(e['altaz'][1].degrees, 0, 4)}º {rich(e['altaz'][1].degrees)}{SPACE*2}"""
+                parts[-1]["text"] = f"""<b>{e['Name']}{SPACE*(13-len(e['Name']))}{ptime(e['dt'])}{"</b>" if not hell else ""}~~{m_str}mag{"</b>" if hell else ""}
+                                    ~az:{runde(e['altaz'][1].degrees, 0, 4)}º {rich(e['altaz'][1].degrees)}~~"""
                 if nicht_horizont:
                     parts[-1]["text"] += f"{'<b>' if e['Name'] == 'Kulmination' else ''}h: {runde(e['altaz'][0].degrees, 0, 3)}º{'</b>' if e['Name'] == 'Kulmination' else ''}"
                 if e["Name"] == "Kulmination":
-                    parts[-1]["text"] += f"""<br>{SPACE*2}Distanz: {round(e['Distanz'].km, 1)}km{SPACE*2}Geschw.: {round(e['Geschwindigkeit'].km_per_s, 1)}km/s{SPACE*2}
+                    parts[-1]["text"] += f"""<br>~~Distanz: {round(e['Distanz'].km, 1)}km~~Geschw.: {round(e['Geschwindigkeit'].km_per_s, 1)}km/s~~
                     Sonne: {round(ortH.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
                 parts[-1]["text"] += "<br>"
 
