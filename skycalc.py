@@ -41,6 +41,7 @@ def ptime(dt:datetime)->str:
 def runde(zahl:float, n:int, m:int=0)->str:
     # rundet die Zahl zahl auf n stellen und füllt mit Leerzeichen auf m Stellen auf.
     # round the number zahl to n digits and fills with spaces to at least m digits.
+    colors = ["#710D38", "#412769", "#17371A", "#303030"]
     if n == 0:
         ret = str(int(zahl))
     else:
@@ -543,6 +544,11 @@ def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:st
     print("Fertig")
 
 def readConfig():
+    conf = f"{PATH}/.config"
+    if not os.path.exists(conf):
+        with open(conf, "w") as f:
+            f.write("[Example]\nlon = 0.00\nlat = 0.00\nelev = 0")
+        print(f"Kein .config-file. Bitte in „{conf}“ die Daten des Wohnortes angeben")
     with open(f"{PATH}/.config", "r") as f:
         w = f.read().split("[")
     for wi in w:
