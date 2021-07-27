@@ -14,19 +14,9 @@ chmod +x skycalc.py
 ```
 Dadurch wird die Datei ausführbar und ```./skycalc.py``` startet das Skript. Anderenfalls muss es jedesmal mit ```python skycalc.py``` gestartet werden was schlicht unpraktischer ist.
 
-## Zwingende Konfiguration
-Oben im Dokument werden einige Variablen gesetzt. Die Kommentare beschreiben wie sie geändert werden ekönnen.
-
-### Variable PATH
-Das Skript **muss** wissen, wo es sich befindet um seine Dateien zu schreiben und zu lesen. Bitte ohne abschließenden Slash
-
-### Variable TZ
-Das definiert die Zeitzone, in der man lebt. Logischerweise **soll** diese stimmen wenn man nicht zufällig in deutscher Sommerzeit lebt. Im Timedelta wird die differenz zur UTC angegeben, bei Mitteleuropäischer Sommerzeit sind es z.B. 2 Stunden also steht dort [...]hours = 2[...]
-
-## Optionale Konfiguration
-
-### Variable BROWSER
-Das definiert welcher Browser zum öffnen der Tabelle verwendet wird. Natürlich kann man sich auch einfach ein Lesezeichen anlegen und dieses nach dem Durchlauf des Skriptes öffnen
+## Konfigurationsdatei
+In `.config` werden für jeden Ort seine Daten angegeben.Das sind Länge, Breite und Höhe. Für jeden Ort wird in eckigen Klammern sein Name geschrieben und darunter in beliebiger Reihenfolge `lat`, `lon` und `elev`. Werden mehrere Orte angegeben werden auch immer alle berechnet! Das kann gerade bei aktiver Satellitenberechnung länger dauern.
+Letztlich entsteht im Unterordner `html` für jeden Ort eine Datei mit seinem Namen, und sie sind  mit einander verlinkt.
 
 ## Nutzerschnittstelle
 Ohne Parameter erzeugt es die Tabelle in ```table.html``` im gleichen Ordner in dem es sich befindet.

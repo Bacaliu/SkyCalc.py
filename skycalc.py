@@ -9,7 +9,7 @@ import os
 import pytz
 import requests
 import skyfield
-from skyfield.api import N, W, E, S, wgs84, load, utc, Star
+from skyfield.api import N, W, E, S, wgs84, Loader, load, utc, Star
 from skyfield.framelib import ecliptic_frame
 from skyfield.data import hipparcos, stellarium
 from skyfield.magnitudelib import planetary_magnitude
@@ -18,17 +18,12 @@ from skyfield.units import Angle
 from skyfield import almanac, searchlib
 import sys
 from tqdm.auto import tqdm
-## Konstanten - Nicht bearbeiten | Constants - don't change
+
+PATH = os.path.abspath(os.path.dirname(sys.argv[0]))
+load = Loader(f"{PATH}/data")
 ts = load.timescale()
 SPACE = "&nbsp;"
 EPH = load('de421.bsp')
-## Einstellungen - bei Bedarf bearbeiten | Settings - set them if needed
-# PATH = Pfadt zu dieser Datei | PATH = path to this file
-PATH = "/home/adrian/Skripte/astro"
-# BROWSER = name des Browsers | BROWSER = name of the Browser
-BROWSER = "firefox"
-# Anzahl der Stunden zwischen UTC und unserer Zeitzone | number of hours between UTC and our Timezone
-TZ = timezone(timedelta(hours = 2))
 
 ## Herunterladen der Satellitendaten | Downloading satellite-data
 VISUAL = load.tle_file('https://celestrak.com/NORAD/elements/visual.txt', reload = False)
@@ -41,7 +36,7 @@ def position(lon:float, lat:float):
     return ort, ortE
 
 def ptime(dt:datetime)->str:
-    return dt.astimezone(TZ).strftime("%Hh%Mm%Ss")
+    return dt.astimezone().strftime("%Hh%Mm%Ss")
 
 def runde(zahl:float, n:int, m:int=0)->str:
     # rundet die Zahl zahl auf n stellen und füllt mit Leerzeichen auf m Stellen auf.
@@ -58,8 +53,8 @@ def mag(ts0, sat, lon:float, lat:float, eph = EPH):
     tar_n = sat.target_name.split("#")[1]
     satid = sat_id(sat)
     ## ist schon im cache?
-    if os.path.exists(f"{PATH}/satmag.txt"):
-        with open(f"{PATH}/satmag.txt", "r") as f:
+    if os.path.exists(f"{PATH}/data/satmag.txt"):
+        with open(f"{PATH}/data/satmag.txt", "r") as f:
             for l in f:
                 if l.split(":")[0] == satid:
                     m = l.split(":")[1]
@@ -75,7 +70,7 @@ def mag(ts0, sat, lon:float, lat:float, eph = EPH):
         m = float(r)
     except:
         m = "?"
-    with open(f"{PATH}/satmag.txt", "a") as f:
+    with open(f"{PATH}/data/satmag.txt", "a") as f:
         f.write(f"{satid}:{m}\n")
     try:
         return m+offset
@@ -379,7 +374,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float):
         this = dict()
         this["dt"] = t.utc_datetime()
         this["html"] = "<tr>"
-        if previous_e < e:
+        if previous_e < e: #Sonnenaufgang
             if e >= 4:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
@@ -389,7 +384,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float):
                     f"{sonne_darstell(e-1)}",
                     f"<b>{dämmerungen[e]}</b>{SPACE*2}{dämbesch[1][e]}")
 
-        else:
+        else: #Sonnenuntergang
             if e >= 3:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
@@ -491,9 +486,10 @@ def draw_all_sats(events, lon:float, lat:float):
         plt.savefig(f"{PATH}/tmp/sat{e['index']}.png")
         plt.cla()
 
-def calsky(dt0:datetime, dt1:datetime, lat:float, lon:float, elev:float, name:str="table",
+def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:str="table",
         sat = None, sat_mag = 4 , mond:bool = True, planeten:bool = True, sonne:bool = True):
-
+    
+    print(f"rechne {name} bei {lon}|{lat}")
     ts0, ts1 = ts.from_datetime(dt0), ts.from_datetime(dt1)
     tab = list()
     if sat:
@@ -522,30 +518,67 @@ def calsky(dt0:datetime, dt1:datetime, lat:float, lon:float, elev:float, name:st
     h += "</style>"
     h += "</head>"
     h += '<body>'
-    h += f'<h1>Astronomische Ereignisse für {round(lat, 2)}ºN, {round(lon, 2)}ºE</h1>'
+    h += f'<h1>Astronomische Ereignisse in {name} ({round(lat, 2)}ºN, {round(lon, 2)}ºE)</h1>'
     h += f"<h3>{dt0.strftime('%A, %Y-%m-%d %Hh')} bis {dt1.strftime('%A, %Y-%m-%d %Hh')}</h3>"
-    h += f"Errechnet {datetime.now().strftime('%Y-%m-%d um %Hh%Mm%Ss %Hh%Mm%Ss')}"
+    ## ORTSLISTE
+    h += "<ul>"
+    for o in listOrte():
+        h += f'<li><a href="{o}.html">{o}</a></li>'
+    h += "</ul>"
+    ## /ORTSLISTE
+    h += f"Errechnet {datetime.now().strftime('%Y-%m-%d um %Hh%Mm%Ss')}, Zeiten in {dt0.tzinfo}"
     h += f"{table_head}"
     h += f"{table_caption(dt0)}"
     for i, t in enumerate(tab):
         h += t["html"]
-        if ((tab[min((i+1), len(tab)-1)]["dt"]).astimezone(TZ).day
-                != (t["dt"]).astimezone(TZ).day):
+        if ((tab[min((i+1), len(tab)-1)]["dt"]).astimezone().day
+                != (t["dt"]).astimezone().day):
             h +="</table>"
             h += f"{table_head}"
             h += f'{table_caption(tab[(i+1)%len(tab)]["dt"])}'
     h +="</table></body>"
-    with open(f"{PATH}/table.html", "w") as f:
+
+    if not os.path.exists(f"{PATH}/html"):
+        os.mkdir(f"{PATH}/html")
+    with open(f"{PATH}/html/{name}.html", "w") as f:
         f.write(h)
     print("Fertig")
 
+def readConfig():
+    with open(f"{PATH}/.config", "r") as f:
+        w = f.read().split("[")
+    for wi in w:
+        if len(wi) == 0:
+            continue
+        name = wi.split("]")[0]
+        lon = 0
+        lat = 0
+        elev = 0
+        for line in wi.split("\n"):
+            ll = line.split()
+            if "lon" in ll:
+                lon = float(ll[-1])
+            if "lat" in ll:
+                lat = float(ll[-1])
+            if "elev" in ll:
+                elev = float(ll[-1])
+
+        yield lon, lat, elev, name
+
+def listOrte():
+    with open(f"{PATH}/.config", "r") as f:
+        w = f.read().split("[")
+    for wi in w:
+        o = wi.split("]")[0]
+        if o != "":
+            yield o
 
 def main():
     sat = (VISUAL if "-sat" in sys.argv else False)
     dur = 24
     sat_mag = 5
     op = False
-    start = datetime.now().astimezone(TZ).replace(second=0, minute=0, hour = 0)
+    start = datetime.now().astimezone().replace(second=0, minute=0)
     for i, arg in enumerate(sys.argv):
         if arg == "-dur":
             dur = int(sys.argv[i+1])
@@ -555,12 +588,11 @@ def main():
         if arg == "-open":
             op = True
         if arg == "-start":
-            start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone(TZ)
+            start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone()
 
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
-    calsky(start, start+timedelta(hours = dur),51.86,7.49,60,"table", sat, sat_mag = sat_mag)
-    if op:
-        os.system(f"{BROWSER} {PATH}/table.html")
+    for lon, lat, elev, name in readConfig():
+        calsky(start, start+timedelta(hours = dur),lon,lat,elev,name, sat, sat_mag = sat_mag)
 
 if __name__ == "__main__":
     main()
