@@ -41,7 +41,6 @@ def ptime(dt:datetime)->str:
 def runde(zahl:float, n:int, m:int=0)->str:
     # rundet die Zahl zahl auf n stellen und füllt mit Leerzeichen auf m Stellen auf.
     # round the number zahl to n digits and fills with spaces to at least m digits.
-    colors = ["#710D38", "#412769", "#17371A", "#303030"]
     if n == 0:
         ret = str(int(zahl))
     else:
@@ -293,8 +292,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     for ti, yi in zip(ta, ya):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
         phase = planetenphase(ti, "MOON")
-        if alt.degrees < 0 and yi=="Kulmination":
-            continue
+
         this = dict()
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
@@ -323,7 +321,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
         n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
         t+=ta
         y+=[n[yi] for yi in ya]
- 
+
         ta, ya = searchlib.find_maxima(ts0, ts1, altF)
         t+=ta
         y+=["Kulmination" for yi in ya]
@@ -336,8 +334,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
             except:
                 m = f"{SPACE*2}?{SPACE*2}mag"
             alt, az, ra, dec, dis = AltAzRaDecDis(EPH[planet], ti, lon, lat, elev)
-            if alt.degrees < 0 and yi == "Kulmination":
-                continue
+
             this = dict()
             this["dt"] = ti.utc_datetime()
             this["html"] = html_row(ptime(ti.utc_datetime()),
@@ -363,13 +360,13 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
     ]
     ortG, ortH = position(lon, lat, elev)
     ret = []
-    
+
     f = almanac.dark_twilight_day(EPH, ortG)
     times, events = almanac.find_discrete(ts0, ts1, f)
 
     previous_e = f(ts0).item()
     for t, e in zip(times, events):
-        pos = ortH.at(t).observe(EPH[f'SUN']).apparent().altaz()
+        alt, az, ra, dec, dis = AltAzRaDecDis(EPH["Sun"], t, lon, lat, elev)
         this = dict()
         this["dt"] = t.utc_datetime()
         this["html"] = "<tr>"
@@ -377,21 +374,21 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
             if e >= 4:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
-                    f"<b>Aufgang</b>{SPACE*6}az: {round(pos[1].degrees)}º {rich(pos[1].degrees)}")
+                    f"<b>Aufgang</b>{SPACE*6}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
-                    f"<b>{dämmerungen[e]}</b>{SPACE*2}{dämbesch[1][e]}")
+                    f"<b>{dämmerungen[e]}</b>{SPACE*2}{dämbesch[1][e]}<br>Sonnenhöhe:{SPACE}{runde(alt.degrees, 0, 3)}º")
 
         else: #Sonnenuntergang
             if e >= 3:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
-                f"<b>Untergang</b>{SPACE*4}az: {round(pos[1].degrees)}º {rich(pos[1].degrees)}")
+                f"<b>Untergang</b>{SPACE*4}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
-                f"<b>{dämmerungen[e+1]}</b>{SPACE*2}{dämbesch[0][e+1]}")
+                f"<b>{dämmerungen[e+1]}</b>{SPACE*2}{dämbesch[0][e+1]}<br>Sonnenhöhe:{SPACE}{runde(alt.degrees, 0, 3)}º")
         previous_e = e
 
         this["html"] += "</tr>"
