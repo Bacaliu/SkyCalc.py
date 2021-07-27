@@ -30,10 +30,10 @@ VISUAL = load.tle_file('https://celestrak.com/NORAD/elements/visual.txt', reload
 STATIONS = load.tle_file("https://celestrak.com/NORAD/elements/stations.txt", reload = False)
 STARLINK = load.tle_file("https://celestrak.com/NORAD/elements/starlink.txt", reload = False)
 
-def position(lon:float, lat:float):
-    ortE = EPH["EARTH"]+wgs84.latlon(lat*N, lon*E)
-    ort = wgs84.latlon(lat, lon)
-    return ort, ortE
+def position(lon:float, lat:float, elev:float):
+    ortG = wgs84.latlon(lat, lon, elev)
+    ortH = ortG+EPH["EARTH"]
+    return ortG, ortH
 
 def ptime(dt:datetime)->str:
     return dt.astimezone().strftime("%Hh%Mm%Ss")
@@ -48,8 +48,8 @@ def runde(zahl:float, n:int, m:int=0)->str:
     ret = max(m-len(ret), 0)*SPACE + ret
     return ret
 
-def mag(ts0, sat, lon:float, lat:float, eph = EPH):
-    offset = offset_mag(ts0, sat, lon, lat)
+def mag(ts0, sat, lon:float, lat:float, elev:float, eph = EPH):
+    offset = offset_mag(ts0, sat, lon, lat, elev)
     tar_n = sat.target_name.split("#")[1]
     satid = sat_id(sat)
     ## ist schon im cache?
@@ -77,10 +77,10 @@ def mag(ts0, sat, lon:float, lat:float, eph = EPH):
     except:
         return "?"
 
-def offset_mag(ts0, satellite, lon:float, lat:float, eph = EPH)->float:
-    ort, ortE = position(lon, lat)
-    g = (EPH["EARTH"]+satellite).at(ts0).observe(EPH["SUN"]).separation_from((EPH["EARTH"]+satellite).at(ts0).observe(ortE))
-    d = (satellite-ort).at(ts0).altaz()[2]
+def offset_mag(ts0, satellite, lon:float, lat:float, elev:float, eph = EPH)->float:
+    ortG, ortH = position(lon, lat, elev)
+    g = (EPH["EARTH"]+satellite).at(ts0).observe(EPH["SUN"]).separation_from((EPH["EARTH"]+satellite).at(ts0).observe(ortH))
+    d = (satellite-ortG).at(ts0).altaz()[2]
     return - 15 + 5*log10(d.km) -2.5*log10(sin(g.radians) + (pi-g.radians)*cos(g.radians))
 
 def rich(alt:float)->str:
@@ -95,13 +95,11 @@ def rich(alt:float)->str:
 def mix(n:float, l:float, u:float)->float:
     return max(l, min(u, n))
 
-def satcol(ts0, satellite, lon:float, lat:float)->tuple:
-    ort, ortE = position(lon, lat)
-
+def satcol(ts0, satellite, lon:float, lat:float, elev:float)->tuple:
     if not satellite.at(ts0).is_sunlit(EPH):
         return (0, 0, 0.25)
 
-    m = mag(ts0, satellite, lon, lat)
+    m = mag(ts0, satellite, lon, lat, elev)
     try:
         m = float(m)
     except:
@@ -120,10 +118,10 @@ def html_row(a:str, b:str, c:str, params:str="")->str:
 def big_emoji(emoji:str)->str:
     return f'<span style = "font-size:200%">{emoji}</span><br>'
 
-def mondphase(ts0)->float:
+def planetenphase(ts0, planet:str)->float:
     _, slon, _ = EPH["EARTH"].at(ts0).observe(EPH["SUN"]).apparent().frame_latlon(ecliptic_frame)
-    _, mlon, _ = EPH["EARTH"].at(ts0).observe(EPH["MOON"]).apparent().frame_latlon(ecliptic_frame)
-    phase = (mlon.degrees - slon.degrees) % 360.0
+    _, plon, _ = EPH["EARTH"].at(ts0).observe(EPH[planet]).apparent().frame_latlon(ecliptic_frame)
+    phase = (plon.degrees - slon.degrees) % 360.0
     return phase
 
 def mond_emoji(phase:float)->str:
@@ -138,7 +136,7 @@ def mond_url()->str:
     return "https://theskylive.com/moon-info"
 
 def mond_darstell(ts)->str:
-    return f'{mond_emoji(mondphase(ts))}<a href="{mond_url()}" target = "_blank">Mond</a>'
+    return f'{mond_emoji(planetenphase(ts, "Moon"))}<a href="{mond_url()}" target = "_blank">Mond</a>'
 
 def sat_id(sat)->str:
     tar_n = sat.target_name.split("#")[1]
@@ -186,11 +184,10 @@ def sonne_darstell(helligkeit:int)->str:
         name = "Dämmerung"
     return f'{sonne_emoji(helligkeit)}<a href="{planet_url("sun")}" target="_blank">{name}'
 
-def AltAzRaDecDis(eph, ts0, lon, lat, elev):
-    ort, ortE = position(lon, lat)
-    geographic = wgs84.latlon(lat, lon, elev)
-    alt, az, dis = ortE.at(ts0).observe(eph).apparent().altaz()
-    ra, dec, _ = geographic.at(ts0).from_altaz(alt, az).radec()
+def AltAzRaDecDis(eph, ts0, lon:float, lat:float, elev:float):
+    ortG, ortH = position(lon, lat, elev)
+    alt, az, dis = ortH.at(ts0).observe(eph).apparent().altaz()
+    ra, dec, _ = ortG.at(ts0).from_altaz(alt, az).radec()
 
     return alt, az, ra, dec, dis
 
@@ -199,13 +196,13 @@ def AltAzRaDecDis(eph, ts0, lon, lat, elev):
 ######################################################################################
 
 def satellite_events(satellites, ts0, ts1,
-        min_degrees:float, lon:float, lat:float, sun_deg:float=-9, max_mag:float=4):
+        min_degrees:float, lon:float, lat:float, elev:float, sun_deg:float=-9, max_mag:float=4):
 
-    ort, ortE = position(lon, lat)
+    ortG, ortH = position(lon, lat, elev)
     events = []
     index = 0
     for sat in tqdm(satellites, desc = "suche Satelliten"):
-        t, event = sat.find_events(ort, ts0, ts1, altitude_degrees=0)
+        t, event = sat.find_events(ortG, ts0, ts1, altitude_degrees=0)
         if len(event) < 3:
             continue
         while event[0] != 0:
@@ -217,21 +214,21 @@ def satellite_events(satellites, ts0, ts1,
             t = t[:-1]
             event = event[:-1]
         for i in range(0, len(event), 3):
-            if (sat-ort).at(t[1+i]).altaz()[0].degrees < min_degrees:
+            if (sat-ortG).at(t[1+i]).altaz()[0].degrees < min_degrees:
                 continue
             e = dict()
-            e["diff"] = (sat-ort)
+            e["diff"] = (sat-ortG)
             e["satellite"] = sat
             e["index"] = index
 
-            if ortE.at(t[i+1]).observe(EPH["SUN"]).apparent().altaz()[0].degrees > sun_deg:
+            if ortH.at(t[i+1]).observe(EPH["SUN"]).apparent().altaz()[0].degrees > sun_deg:
                 continue
 
             for j, name in enumerate(["Aufgang", "Kulmination", "Untergang"]):
                 e[name] = dict()
                 e[name]["ts"] = t[i+j]
                 e[name]["dt"] = t[i+j].utc_datetime()
-                e[name]["mag"] = mag(e[name]["ts"], e["satellite"], lon, lat)
+                e[name]["mag"] = mag(e[name]["ts"], e["satellite"], lon, lat, elev)
                 e[name]["altaz"] = e["diff"].at(e[name]["ts"]).altaz()
                 e[name]["Distanz"] = e["diff"].at(e[name]["ts"]).distance()
                 e[name]["Geschwindigkeit"] = e["diff"].at(e[name]["ts"]).speed()
@@ -250,11 +247,11 @@ def satellite_events(satellites, ts0, ts1,
                     e[name]["dt"] = ti
                     e[name]["ts"] = ts.from_datetime(ti)
                     try:
-                        e[name]["mag"] = float(mag(e[name]["ts"], e["satellite"], lon, lat))
+                        e[name]["mag"] = float(mag(e[name]["ts"], e["satellite"], lon, lat, elev))
                     except:
                         e[name]["mag"] = None
                     e[name]["altaz"] = e["diff"].at(e[name]["ts"]).altaz()
-                    e[name]["mag"] = mag(e[name]["ts"], e["satellite"], lon, lat)
+                    e[name]["mag"] = mag(e[name]["ts"], e["satellite"], lon, lat, elev)
                     e[name]["Distanz"] = e["diff"].at(e[name]["ts"]).distance()
                     e[name]["Geschwindigkeit"] = e["diff"].at(e[name]["ts"]).speed()
                     e[name]["Name"] = name
@@ -270,7 +267,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
         return alt.degrees
     altF.step_days = 0.5
     
-    ort, ortE = position(lon, lat)
+    ortG, ortH = position(lon, lat, elev)
 
     ret = []
     ta = list()
@@ -284,7 +281,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ta+=t
     ya+=[almanac.MOON_NODES[yi] for yi in y]
     ## AUF UNTER
-    t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ort))
+    t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ortG))
     ta+=t
     n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
     ya+=[n[yi] for yi in y]
@@ -294,24 +291,24 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ya+=["Kulmination" for yi in y]
     for ti, yi in zip(ta, ya):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ti, lon, lat, elev)
-        phase = mondphase(ti)
+        phase = planetenphase(ti, "MOON")
         if alt.degrees < 0 and yi=="Kulmination":
             continue
         this = dict()
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
                        mond_darstell(ti),
-                       f"<b>{yi}</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}<b>h:{SPACE}{runde(alt.degrees, 0, 3)}º</b><br>Phase:{SPACE}{runde(phase, 1, 5)}º{SPACE*2}Beleuchtet:{SPACE}{runde(min(phase, 360-phase), 1, 5)}º<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}")
+                       f"<b>{yi}</b>{SPACE*2}az:{SPACE}{runde(az.degrees, 0, 3)}º{SPACE}{rich(az.degrees)}{SPACE*2}alt:{SPACE}{runde(alt.degrees, 0, 3)}º<br>Phase:{SPACE}{runde(phase, 1, 5)}º{SPACE*2}Beleuchtet:{SPACE}{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:{SPACE}{ra}{SPACE*2}DEC:{SPACE}{dec}{SPACE*2}")
         ret.append(this)
 
     return ret
 
 def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     def altF(t)->float:
-        return ortE.at(t).observe(EPH[planet]).apparent().altaz()[0].degrees
+        return ortH.at(t).observe(EPH[planet]).apparent().altaz()[0].degrees
     altF.step_days = 0.5
 
-    ort, ortE = position(lon, lat)
+    ortG, ortH = position(lon, lat, elev)
     ret = []
 
     for planet in ["MERCURY", "VENUS", "MARS", "JUPITER_BARYCENTER",
@@ -320,7 +317,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
         y = list()
 
         ta, ya = almanac.find_discrete(ts0, ts1,
-            almanac.risings_and_settings(EPH, EPH[f'{planet}'], ort))
+            almanac.risings_and_settings(EPH, EPH[f'{planet}'], ortG))
 
         n = [f"Untergang{SPACE*2}", f"Aufgang{SPACE*4}"]
         t+=ta
@@ -331,8 +328,9 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
         y+=["Kulmination" for yi in ya]
 
         for ti, yi in zip(t, y):
+            phase = planetenphase(ti, planet)
             try:
-                m = planetary_magnitude(ortE.at(ti).observe(EPH[f'{planet}']))
+                m = planetary_magnitude(ortH.at(ti).observe(EPH[f'{planet}']))
                 m = "<b>"+str(runde(m, 1, 4))+" mag</b>"
             except:
                 m = f"{SPACE*2}?{SPACE*2}mag"
@@ -343,11 +341,11 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
             this["dt"] = ti.utc_datetime()
             this["html"] = html_row(ptime(ti.utc_datetime()),
                         planet_darstell(planet),
-                        f"<b>{yi}</b>{SPACE*2}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}{SPACE*2}<b>h: {runde(alt.degrees, 0, 3)}º</b><br>{m}<br>RA: {ra}{SPACE*2}DEC: {dec}")
+                        f"<b>{yi}</b>{SPACE*2}az: {runde(az.degrees, 0, 3)}º {rich(az.degrees)}{SPACE*2}alt: {runde(alt.degrees, 0, 3)}º<br>Phase:{SPACE}{runde(phase, 1, 5)}º{SPACE*2}Beleuchtet:{SPACE}{runde(min(phase, 360-phase)/1.8, 1, 5)}%{SPACE*2}{m}<br>RA: {ra}{SPACE*2}DEC: {dec}")
             ret.append(this)
     return ret
 
-def sonne_events(ts0, ts1, lon:float, lat:float):
+def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
     dämmerungen = [
         "Nacht", "Astronomische Dämmerung", "Nautische Dämmerung",
         "Bürgerliche Dämmerung", "Tag"
@@ -362,15 +360,15 @@ def sonne_events(ts0, ts1, lon:float, lat:float):
             "helle Sterne und Planeten verblassen", ""
         ]
     ]
-    ort, ortE = position(lon, lat)
+    ortG, ortH = position(lon, lat, elev)
     ret = []
     
-    f = almanac.dark_twilight_day(EPH, ort)
+    f = almanac.dark_twilight_day(EPH, ortG)
     times, events = almanac.find_discrete(ts0, ts1, f)
 
     previous_e = f(ts0).item()
     for t, e in zip(times, events):
-        pos = ortE.at(t).observe(EPH[f'SUN']).apparent().altaz()
+        pos = ortH.at(t).observe(EPH[f'SUN']).apparent().altaz()
         this = dict()
         this["dt"] = t.utc_datetime()
         this["html"] = "<tr>"
@@ -399,9 +397,9 @@ def sonne_events(ts0, ts1, lon:float, lat:float):
         ret.append(this)
     return ret
 
-def sat_events_to_html(events, lon:float, lat:float, sat_mag = 4):
+def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
     rows = list()
-    ort, ortE = position(lon, lat)
+    ortG, ortH = position(lon, lat, elev)
     for i, ev in enumerate(events):
         parts = list()
         for k, e in ev.items():
@@ -427,7 +425,7 @@ def sat_events_to_html(events, lon:float, lat:float, sat_mag = 4):
                     parts[-1]["text"] += f"{'<b>' if e['Name'] == 'Kulmination' else ''}h: {runde(e['altaz'][0].degrees, 0, 3)}º{'</b>' if e['Name'] == 'Kulmination' else ''}"
                 if e["Name"] == "Kulmination":
                     parts[-1]["text"] += f"""<br>{SPACE*2}Distanz: {round(e['Distanz'].km, 1)}km{SPACE*2}Geschw.: {round(e['Geschwindigkeit'].km_per_s, 1)}km/s{SPACE*2}
-                    Sonne: {round(ortE.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
+                    Sonne: {round(ortH.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
                 parts[-1]["text"] += "<br>"
 
         parts.sort(key = lambda x: x["dt"])
@@ -440,32 +438,32 @@ def sat_events_to_html(events, lon:float, lat:float, sat_mag = 4):
             f'''<img src="{PATH}/tmp/sat{ev['index']}.png" height="90" align="right">{"".join(part["text"] for part in parts)}'''.replace("\n", ""))
     return rows
 
-def draw_sat_überflug(ax:plt.axis, e, lon:float, lat:float,
+def draw_sat_überflug(ax:plt.axis, e, lon:float, lat:float, elev:float,
         tick:timedelta=timedelta(seconds=15)):
 
-    ort, ortE = position(lon, lat)
+    ortG, ortH = position(lon, lat, elev)
     minute = timedelta(seconds = 60)
     fm = e["Aufgang"]["dt"]-timedelta(seconds = e["Aufgang"]["dt"].second)+minute
 
     tag = "#ffe0a5" ## Tag
     colors = ["#665c49", "#282620", "#100f0e", "#060606"]
-    sh = ortE.at(e["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees
+    sh = ortH.at(e["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees
     for col, deg in zip(colors, [0, -6, -12, -18]):
         if sh < deg:
             color = col
     
-    if sh < -18 and ortE.at(e["Kulmination"]["ts"]).observe(EPH["MOON"]).apparent().altaz()[0].degrees > 0:
+    if sh < -18 and ortH.at(e["Kulmination"]["ts"]).observe(EPH["MOON"]).apparent().altaz()[0].degrees > 0:
         color = "#051f1f"
         
     ax.set_facecolor(color)
 
     for zeit in [e["Aufgang"]["dt"]+i*tick for i in range(int((e["Untergang"]["dt"] - e["Aufgang"]["dt"])/tick))]:
-        c = satcol(ts.from_datetime(zeit), e["satellite"], lon, lat)
+        c = satcol(ts.from_datetime(zeit), e["satellite"], lon, lat, elev)
         ax.plot([e["diff"].at(ts.from_datetime(z)).altaz()[1].degrees*pi/180 for z in [zeit, zeit+tick]],
                   [e["diff"].at(ts.from_datetime(z)).altaz()[0].degrees for z in [zeit, zeit+tick]],
                   color = c, lw = 5)
 
-def draw_all_sats(events, lon:float, lat:float):
+def draw_all_sats(events, lon:float, lat:float, elev:float):
     plt.rcParams['figure.figsize'] = [4.0, 4.0]
     if not os.path.exists(f"{PATH}/tmp"):
         print("Erstelle Hilfsordner für die Bilder")
@@ -480,7 +478,7 @@ def draw_all_sats(events, lon:float, lat:float):
         ax.set_yticklabels(["", ""])
         ax.set_xticks([0, np.pi/2, np.pi, np.pi*1.5])
         ax.set_xticklabels(["N", "O", "S", "W"])
-        draw_sat_überflug(ax, e, lon, lat, tick = timedelta(seconds = 20))
+        draw_sat_überflug(ax, e, lon, lat, elev, tick = timedelta(seconds = 20))
         ax.grid()
         plt.tight_layout()
         plt.savefig(f"{PATH}/tmp/sat{e['index']}.png")
@@ -493,15 +491,15 @@ def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:st
     ts0, ts1 = ts.from_datetime(dt0), ts.from_datetime(dt1)
     tab = list()
     if sat:
-        sats = satellite_events(sat, ts0, ts1, 20, lon = lon, lat = lat, sun_deg = -6, max_mag = sat_mag)
-        draw_all_sats(sats, lon, lat)
-        tab += sat_events_to_html(sats, lon, lat, sat_mag = sat_mag)
+        sats = satellite_events(sat, ts0, ts1, 20, lon, lat, elev,  -6, sat_mag)
+        draw_all_sats(sats, lon, lat, elev)
+        tab += sat_events_to_html(sats, lon, lat, elev, sat_mag)
     if mond:
         tab += mond_events(ts0, ts1, lon, lat, elev)
     if planeten:
         tab += planeten_events(ts0, ts1, lon, lat, elev)
     if sonne:
-        tab += sonne_events(ts0, ts1, lon, lat)
+        tab += sonne_events(ts0, ts1, lon, lat, elev)
 
     tab.sort(key = lambda x: x["dt"])
 
