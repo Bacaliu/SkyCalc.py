@@ -301,7 +301,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
         ret.append(this)
 
     return ret
-
+#Kommentar
 def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     def altF(t)->float:
         return ortH.at(t).observe(EPH[planet]).apparent().altaz()[0].degrees
