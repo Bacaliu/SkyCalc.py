@@ -4,7 +4,6 @@ Achtung: Das Skript ist noch nicht fertig. Es kann sich jederzeit die Nuterschni
 SkyCalc entstand aus dem Mangel einer guten Alternative von Calsky als jenes seinen Dienst einstellte. Daher habe ich mich optisch auch sehr stark daran orientiert. Die Berechnungen werden durch Pythons Skyfield modul durchgeführt.
 
 ![Screenshot](screenshot.png)
-*(Die rosa färbung kommt von meiner Browser-Konfiguration. Das ist eine einfache Tabelle ohne farbigen Hintergrund.)*
 
 Die Links der Satelliten führen auf deren jeweiligen Informationsseiten von heavens-above.com und die Links der Planeten, des Mondes und der Sonne auf deren jeweiligen Informationsseiten von theskylive.com. Das sind einfach nach meiner persönlichen Meinung die besten noch vorhandenden Informationsquellen zu den jeweiligen Objekten.
 
