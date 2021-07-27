@@ -283,7 +283,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     ## AUF UNTER
     t, y = almanac.find_discrete(ts0, ts1, almanac.risings_and_settings(EPH, EPH['MOON'], ortG))
     ta+=t
-    n = [f"Untergang~~", f"Aufgang{SPACE*4}"]
+    n = [f"Untergang~~", f"Aufgang~~~~"]
     ya+=[n[yi] for yi in y]
     ## Kulmination
     t, y = searchlib.find_maxima(ts0, ts1, altF)
@@ -374,7 +374,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
             if e >= 4:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
-                    f"<b>Aufgang</b>{SPACE*6}az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
+                    f"<b>Aufgang</b>~~~~~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sonne_darstell(e-1)}",
@@ -384,7 +384,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
             if e >= 3:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
-                f"<b>Untergang</b>{SPACE*4}az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
+                f"<b>Untergang</b>~~~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sonne_darstell(e)}",
