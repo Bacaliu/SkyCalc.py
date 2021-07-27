@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ███████╗██╗  ██╗██╗   ██╗ ██████╗ █████╗ ██╗      ██████╗
+# ██╔════╝██║ ██╔╝╚██╗ ██╔╝██╔════╝██╔══██╗██║     ██╔════╝
+# ███████╗█████╔╝  ╚████╔╝ ██║     ███████║██║     ██║
+# ╚════██║██╔═██╗   ╚██╔╝  ██║     ██╔══██║██║     ██║
+# ███████║██║  ██╗   ██║   ╚██████╗██║  ██║███████╗╚██████╗
+# ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝
+
 from datetime import datetime, timedelta, timezone
 from math import *
 import matplotlib.pyplot as plt
@@ -27,8 +34,13 @@ EPH = load('de421.bsp')
 
 ## Herunterladen der Satellitendaten | Downloading satellite-data
 VISUAL = load.tle_file('https://celestrak.com/NORAD/elements/visual.txt', reload = False)
-STATIONS = load.tle_file("https://celestrak.com/NORAD/elements/stations.txt", reload = False)
-STARLINK = load.tle_file("https://celestrak.com/NORAD/elements/starlink.txt", reload = False)
+
+###############################################################################
+## RECHENHILFE
+###############################################################################
+
+def mix(n:float, l:float, u:float)->float:
+    return max(l, min(u, n))
 
 def position(lon:float, lat:float, elev:float):
     ortG = wgs84.latlon(lat, lon, elev)
@@ -47,6 +59,12 @@ def runde(zahl:float, n:int, m:int=0)->str:
         ret = str(round(zahl, n))
     ret = max(m-len(ret), 0)*SPACE + ret
     return ret
+
+def offset_mag(ts0, satellite, lon:float, lat:float, elev:float, eph = EPH)->float:
+    ortG, ortH = position(lon, lat, elev)
+    g = (EPH["EARTH"]+satellite).at(ts0).observe(EPH["SUN"]).separation_from((EPH["EARTH"]+satellite).at(ts0).observe(ortH))
+    d = (satellite-ortG).at(ts0).altaz()[2]
+    return - 15 + 5*log10(d.km) -2.5*log10(sin(g.radians) + (pi-g.radians)*cos(g.radians))
 
 def mag(ts0, sat, lon:float, lat:float, elev:float, eph = EPH):
     offset = offset_mag(ts0, sat, lon, lat, elev)
@@ -77,12 +95,6 @@ def mag(ts0, sat, lon:float, lat:float, elev:float, eph = EPH):
     except:
         return "?"
 
-def offset_mag(ts0, satellite, lon:float, lat:float, elev:float, eph = EPH)->float:
-    ortG, ortH = position(lon, lat, elev)
-    g = (EPH["EARTH"]+satellite).at(ts0).observe(EPH["SUN"]).separation_from((EPH["EARTH"]+satellite).at(ts0).observe(ortH))
-    d = (satellite-ortG).at(ts0).altaz()[2]
-    return - 15 + 5*log10(d.km) -2.5*log10(sin(g.radians) + (pi-g.radians)*cos(g.radians))
-
 def rich(alt:float)->str:
     for d, n in zip(np.arange(0, 360, 22.5), ["N", "NNO", "NO", "ONO",
                                         "O", "OSO", "SO", "OSO",
@@ -92,8 +104,31 @@ def rich(alt:float)->str:
             return n+(SPACE*(3-len(n)))
     return f"N~~"
 
-def mix(n:float, l:float, u:float)->float:
-    return max(l, min(u, n))
+def AltAzRaDecDis(eph, ts0, lon:float, lat:float, elev:float):
+    ortG, ortH = position(lon, lat, elev)
+    alt, az, dis = ortH.at(ts0).observe(eph).apparent().altaz()
+    ra, dec, _ = ortG.at(ts0).from_altaz(alt, az).radec()
+
+    return alt, az, ra, dec, dis
+
+def planetenphase(ts0, planet:str)->float:
+    _, slon, _ = EPH["EARTH"].at(ts0).observe(EPH["SUN"]).apparent().frame_latlon(ecliptic_frame)
+    _, plon, _ = EPH["EARTH"].at(ts0).observe(EPH[planet]).apparent().frame_latlon(ecliptic_frame)
+    phase = (plon.degrees - slon.degrees) % 360.0
+    return phase
+
+###############################################################################
+# DARSTELLUNG
+###############################################################################
+
+##
+## ALLGEMEIN
+##
+def html_row(a:str, b:str, c:str, params:str="")->str:
+    return f'<tr{params}><td style="text-align:center">{a}</td><td style="text-align:center;">{b}</td><td>{c}</td></tr>'.replace("~", SPACE)
+
+def big_emoji(emoji:str)->str:
+    return f'<span style = "font-size:200%">{emoji}</span><br>'
 
 def satcol(ts0, satellite, lon:float, lat:float, elev:float)->tuple:
     if not satellite.at(ts0).is_sunlit(EPH):
@@ -107,23 +142,22 @@ def satcol(ts0, satellite, lon:float, lat:float, elev:float)->tuple:
 
     return (mix(m, 0, 6)/6, mix(6-m, 0, 6)/6, mix(-m, 0, 4)/4)
 
-####
-# DARSTELLUNG
-# 
-####
+##
+## SONNE
+##
+def sonne_emoji(helligkeit:int)->str:
+    loe = ["&#x1F30C;", "&#x1F303;", "&#x1F306;", "&#x1F307;", "&#x2600;&#xFE0F;"]
+    return big_emoji(loe[helligkeit])
 
-def html_row(a:str, b:str, c:str, params:str="")->str:
-    return f'<tr{params}><td style="text-align:center">{a}</td><td style="text-align:center;">{b}</td><td>{c}</td></tr>'.replace("~", SPACE)
-
-def big_emoji(emoji:str)->str:
-    return f'<span style = "font-size:200%">{emoji}</span><br>'
-
-def planetenphase(ts0, planet:str)->float:
-    _, slon, _ = EPH["EARTH"].at(ts0).observe(EPH["SUN"]).apparent().frame_latlon(ecliptic_frame)
-    _, plon, _ = EPH["EARTH"].at(ts0).observe(EPH[planet]).apparent().frame_latlon(ecliptic_frame)
-    phase = (plon.degrees - slon.degrees) % 360.0
-    return phase
-
+def sonne_darstell(helligkeit:int)->str:
+    if helligkeit == 3:
+        name = "Sonne"
+    else:
+        name = "Dämmerung"
+    return f'{sonne_emoji(helligkeit)}<a href="{planet_url("sun")}" target="_blank">{name}'
+##
+## MOND
+##
 def mond_emoji(phase:float)->str:
     for s, p in zip(["&#127761;", "&#127762;", "&#127763;",
         "&#127764;", "&#127765;", "&#127766;", "&#127767;", "&#127768;"],
@@ -137,7 +171,27 @@ def mond_url()->str:
 
 def mond_darstell(ts)->str:
     return f'{mond_emoji(planetenphase(ts, "Moon"))}<a href="{mond_url()}" target = "_blank">Mond</a>'
+##
+## PLANETEN
+##
+def planet_url(name:str)->str:
+    return f"https://theskylive.com/{name.split('_')[0].lower()}-info"
 
+def planet_emoji(name:str)->str:
+    s = {"mercury":"&#x263F;",
+         "venus":"&#x2640;",
+         "mars":"&#x2642;",
+         "jupiter":"&#x2643",
+         "saturn":"&#x2644",
+         "uranus":"&#x26E2",
+         "neptune":"&#x2646"}
+    return big_emoji(s[name.split('_')[0].lower()])
+
+def planet_darstell(name:str)->str:
+    return f'{planet_emoji(name)}<a href ="{planet_url(name.lower())}" target="_blank">{name.split("_")[0].capitalize()}</a>'
+##
+## SATELLITEN
+##
 def sat_id(sat)->str:
     tar_n = sat.target_name.split("#")[1]
     satid = ""
@@ -157,43 +211,56 @@ def sat_emoji()->str:
 def sat_darstell(sat)->str:
     return f'{sat_emoji()}<a href="{sat_url(sat)}" target="_blank">{sat.name}</a>'
 
-def planet_url(name:str)->str:
-    return f"https://theskylive.com/{name.split('_')[0].lower()}-info"
+######################################################################################
+## SATELLITEN
+######################################################################################
+def draw_sat_überflug(ax:plt.axis, e, lon:float, lat:float, elev:float,
+        tick:timedelta=timedelta(seconds=15)):
 
-def planet_emoji(name:str)->str:
-    s = {"mercury":"&#x263F;",
-         "venus":"&#x2640;",
-         "mars":"&#x2642;",
-         "jupiter":"&#x2643",
-         "saturn":"&#x2644",
-         "uranus":"&#x26E2",
-         "neptune":"&#x2646"}
-    return big_emoji(s[name.split('_')[0].lower()])
-
-def planet_darstell(name:str)->str:
-    return f'{planet_emoji(name)}<a href ="{planet_url(name.lower())}" target="_blank">{name.split("_")[0].capitalize()}</a>'
-
-def sonne_emoji(helligkeit:int)->str:
-    loe = ["&#x1F30C;", "&#x1F303;", "&#x1F306;", "&#x1F307;", "&#x2600;&#xFE0F;"]
-    return big_emoji(loe[helligkeit])
-
-def sonne_darstell(helligkeit:int)->str:
-    if helligkeit == 3:
-        name = "Sonne"
-    else:
-        name = "Dämmerung"
-    return f'{sonne_emoji(helligkeit)}<a href="{planet_url("sun")}" target="_blank">{name}'
-
-def AltAzRaDecDis(eph, ts0, lon:float, lat:float, elev:float):
     ortG, ortH = position(lon, lat, elev)
-    alt, az, dis = ortH.at(ts0).observe(eph).apparent().altaz()
-    ra, dec, _ = ortG.at(ts0).from_altaz(alt, az).radec()
+    minute = timedelta(seconds = 60)
+    fm = e["Aufgang"]["dt"]-timedelta(seconds = e["Aufgang"]["dt"].second)+minute
 
-    return alt, az, ra, dec, dis
+    tag = "#ffe0a5" ## Tag
+    colors = ["#665c49", "#282620", "#100f0e", "#060606"]
+    sh = ortH.at(e["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees
+    for col, deg in zip(colors, [0, -6, -12, -18]):
+        if sh < deg:
+            color = col
+    
+    if sh < -18 and ortH.at(e["Kulmination"]["ts"]).observe(EPH["MOON"]).apparent().altaz()[0].degrees > 0:
+        color = "#051f1f"
+        
+    ax.set_facecolor(color)
 
-######################################################################################
-## SUCHE
-######################################################################################
+    for zeit in [e["Aufgang"]["dt"]+i*tick for i in range(int((e["Untergang"]["dt"] - e["Aufgang"]["dt"])/tick))]:
+        c = satcol(ts.from_datetime(zeit), e["satellite"], lon, lat, elev)
+        ax.plot([e["diff"].at(ts.from_datetime(z)).altaz()[1].degrees*pi/180 for z in [zeit, zeit+tick]],
+                  [e["diff"].at(ts.from_datetime(z)).altaz()[0].degrees for z in [zeit, zeit+tick]],
+                  color = c, lw = 5)
+
+
+def draw_all_sats(events, lon:float, lat:float, elev:float):
+    plt.rcParams['figure.figsize'] = [4.0, 4.0]
+    if not os.path.exists(f"{PATH}/tmp"):
+        print("Erstelle Hilfsordner für die Bilder")
+        os.mkdir(f"{PATH}/tmp")
+    for i, e in tqdm(enumerate(events), desc = "erzeuge Grafiken", total = len(events)):
+        fig = plt.figure()
+        ax = fig.add_subplot(polar = True)
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
+        ax.set_ylim(90, 0)
+        ax.set_yticks([0, 45])
+        ax.set_yticklabels(["", ""])
+        ax.set_xticks([0, np.pi/2, np.pi, np.pi*1.5])
+        ax.set_xticklabels(["N", "O", "S", "W"])
+        draw_sat_überflug(ax, e, lon, lat, elev, tick = timedelta(seconds = 20))
+        ax.grid()
+        plt.tight_layout()
+        plt.savefig(f"{PATH}/tmp/sat{e['index']}.png")
+        plt.cla()
+
 
 def satellite_events(satellites, ts0, ts1,
         min_degrees:float, lon:float, lat:float, elev:float, sun_deg:float=-9, max_mag:float=4):
@@ -261,6 +328,10 @@ def satellite_events(satellites, ts0, ts1,
                 index += 1
     return events
 
+###############################################################################
+## HTML
+###############################################################################
+
 def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     def altF(ts):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ts, lon, lat, elev)
@@ -301,7 +372,8 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
         ret.append(this)
 
     return ret
-#Kommentar
+
+
 def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     def altF(t)->float:
         return ortH.at(t).observe(EPH[planet]).apparent().altaz()[0].degrees
@@ -342,6 +414,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
                         f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~{'<b>' if k else ''}alt:~{runde(alt.degrees, 0, 3)}º{'</b>' if k else ''}<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%~~{m}<br>RA:~{ra}~~DEC:~{dec}")
             ret.append(this)
     return ret
+
 
 def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
     dämmerungen = [
@@ -395,6 +468,7 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
         ret.append(this)
     return ret
 
+
 def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
     rows = list()
     ortG, ortH = position(lon, lat, elev)
@@ -436,51 +510,9 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag = 4):
             f'''<img src="{PATH}/tmp/sat{ev['index']}.png" height="90" align="right">{"".join(part["text"] for part in parts)}'''.replace("\n", ""))
     return rows
 
-def draw_sat_überflug(ax:plt.axis, e, lon:float, lat:float, elev:float,
-        tick:timedelta=timedelta(seconds=15)):
-
-    ortG, ortH = position(lon, lat, elev)
-    minute = timedelta(seconds = 60)
-    fm = e["Aufgang"]["dt"]-timedelta(seconds = e["Aufgang"]["dt"].second)+minute
-
-    tag = "#ffe0a5" ## Tag
-    colors = ["#665c49", "#282620", "#100f0e", "#060606"]
-    sh = ortH.at(e["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees
-    for col, deg in zip(colors, [0, -6, -12, -18]):
-        if sh < deg:
-            color = col
-    
-    if sh < -18 and ortH.at(e["Kulmination"]["ts"]).observe(EPH["MOON"]).apparent().altaz()[0].degrees > 0:
-        color = "#051f1f"
-        
-    ax.set_facecolor(color)
-
-    for zeit in [e["Aufgang"]["dt"]+i*tick for i in range(int((e["Untergang"]["dt"] - e["Aufgang"]["dt"])/tick))]:
-        c = satcol(ts.from_datetime(zeit), e["satellite"], lon, lat, elev)
-        ax.plot([e["diff"].at(ts.from_datetime(z)).altaz()[1].degrees*pi/180 for z in [zeit, zeit+tick]],
-                  [e["diff"].at(ts.from_datetime(z)).altaz()[0].degrees for z in [zeit, zeit+tick]],
-                  color = c, lw = 5)
-
-def draw_all_sats(events, lon:float, lat:float, elev:float):
-    plt.rcParams['figure.figsize'] = [4.0, 4.0]
-    if not os.path.exists(f"{PATH}/tmp"):
-        print("Erstelle Hilfsordner für die Bilder")
-        os.mkdir(f"{PATH}/tmp")
-    for i, e in tqdm(enumerate(events), desc = "erzeuge Grafiken", total = len(events)):
-        fig = plt.figure()
-        ax = fig.add_subplot(polar = True)
-        ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
-        ax.set_ylim(90, 0)
-        ax.set_yticks([0, 45])
-        ax.set_yticklabels(["", ""])
-        ax.set_xticks([0, np.pi/2, np.pi, np.pi*1.5])
-        ax.set_xticklabels(["N", "O", "S", "W"])
-        draw_sat_überflug(ax, e, lon, lat, elev, tick = timedelta(seconds = 20))
-        ax.grid()
-        plt.tight_layout()
-        plt.savefig(f"{PATH}/tmp/sat{e['index']}.png")
-        plt.cla()
+###############################################################################
+## 
+###############################################################################
 
 def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:str="table",
         sat = None, sat_mag = 4 , mond:bool = True, planeten:bool = True, sonne:bool = True):
