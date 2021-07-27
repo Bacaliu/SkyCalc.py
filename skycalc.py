@@ -587,6 +587,7 @@ def readConfig():
         lon = 0
         lat = 0
         elev = 0
+        sat_m = 5
         for line in wi.split("\n"):
             ll = line.split()
             if "lon" in ll:
@@ -595,8 +596,10 @@ def readConfig():
                 lat = float(ll[-1])
             if "elev" in ll:
                 elev = float(ll[-1])
+            if "sat-m" in ll:
+                sat_m = float(ll[-1])
 
-        yield lon, lat, elev, name
+        yield lon, lat, elev, name, sat_m
 
 def listOrte():
     with open(f"{PATH}/.config", "r") as f:
@@ -624,7 +627,7 @@ def main():
             start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone()
 
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
-    for lon, lat, elev, name in readConfig():
+    for lon, lat, elev, name, sat_mag in readConfig():
         calsky(start, start+timedelta(hours = dur),lon,lat,elev,name, sat, sat_mag = sat_mag)
 
 if __name__ == "__main__":

@@ -14,13 +14,14 @@ chmod +x skycalc.py
 Dadurch wird die Datei ausführbar und ```./skycalc.py``` startet das Skript. Anderenfalls muss es jedesmal mit ```python skycalc.py``` gestartet werden was schlicht unpraktischer ist.
 
 ## Konfigurationsdatei
-In `.config` im gleichen ordner werden für jeden Ort seine Daten angegeben.Das sind Länge, Breite und Höhe. Für jeden Ort wird in eckigen Klammern sein Name geschrieben und darunter in beliebiger Reihenfolge `lat` (östliche Länge), `lon` (nördliche Breite)und `elev` (höhe über NN in Metern). Werden mehrere Orte angegeben werden auch immer alle berechnet! Das kann gerade bei aktiver Satellitenberechnung länger dauern.
+In `.config` im gleichen ordner werden für jeden Ort seine Daten angegeben.Das sind Länge, Breite und Höhe. Für jeden Ort wird in eckigen Klammern sein Name geschrieben und darunter in beliebiger Reihenfolge `lat` (östliche Länge), `lon` (nördliche Breite), `elev` (höhe über NN in Metern) und `sat-m` (Mindesthelligkeit der Satelliten). Werden mehrere Orte angegeben werden auch immer alle berechnet! Das kann gerade bei aktiver Satellitenberechnung länger dauern.
 ### Beispiel:
 ```
 [Ulm]
 lon = 9.98
 lat = 48.37
 elev = 478
+sat-m = 3.5
 ```
 Letztlich entsteht im Unterordner `html` für jeden Ort eine Datei mit seinem Namen, und sie sind  mit einander verlinkt.
 
