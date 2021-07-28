@@ -231,8 +231,8 @@ def plot_tagebogen(ts0, ts1, lon:float, lat:float, elev:float, name:str)->None:
 
     gridtick = timedelta(hours = 1)
     tick = timedelta(minutes = 6)
-    dt0 = ts0.utc_datetime()
-    dt1 = ts1.utc_datetime()
+    dt0 = ts0.utc_datetime().astimezone()
+    dt1 = ts1.utc_datetime().astimezone()
     dtrange = [dt0.astimezone() + i * tick for i in range(1+int((dt1-dt0)/tick))]
     trange = ts.from_datetimes(dtrange)
 
@@ -423,7 +423,9 @@ def satellite_events(satellites, ts0, ts1,
 ###############################################################################
 
 def tagebogen_html(ts0, ts1, lon:float, lat:float, elev:float, name:str):
-    dt0, dt1 = ts0.utc_datetime(), ts1.utc_datetime()
+    dt0 = ts0.utc_datetime().astimezone()
+    dt1 = ts1.utc_datetime().astimezone()
+
     dts = dt0.replace(hour = 12, minute = 0, second = 0)
     ret = list()
     t = dts
@@ -433,7 +435,7 @@ def tagebogen_html(ts0, ts1, lon:float, lat:float, elev:float, name:str):
         leg+=f'<div style="color:{planet_col(p)}">{p}</div>'
     leg += ""
     while t < dt1:
-        s = ts.from_datetime(t.astimezone())
+        s = ts.from_datetime(t)
         tagebogen(s, lon, lat, elev, name)
         h = dict()
         h["dt"] = t
