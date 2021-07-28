@@ -101,7 +101,7 @@ def rich(alt:float)->str:
                                         "S", "SSW", "SW", "WSW", 
                                         "W", "WNW", "NW", "NNW"]):
         if abs((alt%360)-d) < 11.25:
-            return n+(SPACE*(3-len(n)))
+            return n+("~"*(3-len(n)))
     return f"N~~"
 
 def AltAzRaDecDis(eph, ts0, lon:float, lat:float, elev:float):
@@ -210,6 +210,84 @@ def sat_emoji()->str:
 
 def sat_darstell(sat)->str:
     return f'{sat_emoji()}<a href="{sat_url(sat)}" target="_blank">{sat.name}</a>'
+
+def planet_col(name:str)->str:
+    pc = {
+        "Sun":"#ffaa00", "Moon":"#666666", "Mercury":"#632100", "Venus":"#9cf",
+        "Mars":"#cf1a17", "Jupiter":"#a36314", "Saturn":"#a5a845", 
+        "Uranus":"#484", "Neptune":"#448"
+    }
+    return pc[name.capitalize().split("_")[0]]
+    
+#################################################################################
+## TAGEBOGEN
+#################################################################################
+
+def plot_tagebogen(ts0, ts1, lon:float, lat:float, elev:float, name:str)->None:
+    plt.rcParams['figure.figsize'] = [16, 6]
+
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    gridtick = timedelta(hours = 1)
+    tick = timedelta(minutes = 6)
+    dt0 = ts0.utc_datetime()
+    dt1 = ts1.utc_datetime()
+    dtrange = [dt0.astimezone() + i * tick for i in range(1+int((dt1-dt0)/tick))]
+    trange = ts.from_datetimes(dtrange)
+
+    ortG, ortH = position(lon, lat, elev)
+
+    pb = tqdm(total = (len(trange)-1)*9, desc = "Planeten")
+    for pname in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter_barycenter", "Saturn_barycenter", "Uranus_barycenter", "Neptune_barycenter"]:
+        col = planet_col(pname)
+        planet = EPH[pname]
+        fname = pname.split("_")[0]
+        m = []
+        pb.write("\r"+pname, end = "    ")
+        for i, t in enumerate(trange[:-1]):
+            pb.update()
+            if i ==0:continue
+            AZ = ortH.at(t).observe(planet).apparent().altaz()[1].degrees
+            if(abs(AZ%45) < abs(ortH.at(trange[i+1]).observe(planet).apparent().altaz()[1].degrees%45)  and
+               abs(AZ%45) < abs(ortH.at(trange[i-1]).observe(planet).apparent().altaz()[1].degrees%45)):
+                if (alt:=ortH.at(t).observe(planet).apparent().altaz()[0].degrees) > 0:
+                    ax.text(t.utc_datetime(),
+                             alt,
+                             rich(AZ).replace("~", ""), fontsize=15, horizontalalignment='center', c = col)#, verticalalignment='center')
+                    m.append(i)
+
+        ax.plot(dtrange,
+                 ortH.at(trange).observe(planet).apparent().altaz()[0].degrees,marker="o",
+                markevery=m, label = fname, c = col)
+    pb.close()
+
+    for i, t in enumerate(tqdm(trange[:-1], desc = "Hintergrundfarbe")):
+        for g in [-18, -12, -6, 0]:
+            if ortH.at(t).observe(EPH["SUN"]).apparent().altaz()[0].degrees<g:
+                ax.axvspan(t.utc_datetime(), trange[i+1].utc_datetime(), facecolor='black', alpha=0.6)
+            if ortH.at(t).observe(EPH["SUN"]).apparent().altaz()[0].degrees>g:
+                ax.axvspan(t.utc_datetime(), trange[i+1].utc_datetime(), facecolor='#ffaa00', alpha=0.1)
+        if (ortH.at(t).observe(EPH["MOON"]).apparent().altaz()[0].degrees>0 and
+            ortH.at(t).observe(EPH["SUN"]).apparent().altaz()[0].degrees<-18):
+            ax.axvspan(t.utc_datetime(), trange[i+1].utc_datetime(), facecolor='cyan', alpha=0.1)
+
+    ax.xaxis.set_ticks([dt0+i*gridtick for i in range(int((dt1-dt0)/gridtick))])
+    ax.xaxis.set_ticklabels([(dt0+i*gridtick).strftime("%Hh") for i in range(int((dt1-dt0)/gridtick))])
+    ax.axis([dt0, dt1, 0, None])
+    #ax.legend()
+    ax.grid()
+    plt.tight_layout()
+    plt.savefig(f'{PATH}/tmp/{name}/Tagebogen-{dt0.strftime("%Y-%m-%d-%H")}.png')
+
+def tagebogen(ts0, lon:float, lat:float, elev:float, name:str):
+    dt0 = ts0.utc_datetime()
+    dname = f"{PATH}/tmp/{name}/Tagebogen-{dt0.strftime('%Y-%m-%d-%H')}.png"
+    if not os.path.exists(dname):
+        ts1 = ts.from_datetime(dt0+timedelta(hours = 24))
+        print("Erstelle Tagebogen...")
+        plot_tagebogen(ts0, ts1, lon, lat, elev, name)
+
 
 ######################################################################################
 ## SATELLITEN
@@ -344,6 +422,29 @@ def satellite_events(satellites, ts0, ts1,
 ###############################################################################
 ## HTML
 ###############################################################################
+
+def tagebogen_html(ts0, ts1, lon:float, lat:float, elev:float, name:str):
+    dt0, dt1 = ts0.utc_datetime(), ts1.utc_datetime()
+    dts = dt0.replace(hour = 12, minute = 0, second = 0)
+    ret = list()
+    t = dts
+    leg = ""
+    for p in ["Sun", "Moon", "Mercury", "Venus", "Mars",
+                "Jupiter", "Saturn","Uranus", "Neptune"]:
+        leg+=f'<div style="color:{planet_col(p)}">{p}</div>'
+    leg += ""
+    while t < dt1:
+        s = ts.from_datetime(t.astimezone())
+        tagebogen(s, lon, lat, elev, name)
+        h = dict()
+        h["dt"] = t
+        h["html"] = html_row(t.strftime("%Hh%Mm"),
+                            f"Tagebogen<br>diagramm<br>{leg}",
+                            f'<img src="{PATH}/tmp/{name}/Tagebogen-{t.strftime("%Y-%m-%d-%H")}.png" height="300">')
+        ret.append(h)
+        t += timedelta(hours = 24)
+    return ret
+
 
 def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
     def altF(ts):
@@ -528,11 +629,18 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, 
 ###############################################################################
 
 def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:str="table",
-        sat = None, sat_mag = 4 , mond:bool = True, planeten:bool = True, sonne:bool = True):
+        sat = None, sat_mag = 4 , mond:bool = True, planeten:bool = True, sonne:bool = True, tageb = False):
     
     print(f"rechne {name} bei {lon}|{lat}")
+    if not os.path.exists(f"{PATH}/tmp"):
+        os.mkdir(f"{PATH}/tmp")
+    if not os.path.exists(f"{PATH}/tmp/{name}"):
+        os.mkdir(f"{PATH}/tmp/{name}")
+
     ts0, ts1 = ts.from_datetime(dt0), ts.from_datetime(dt1)
     tab = list()
+    if tageb:
+        tab += tagebogen_html(ts0, ts1, lon, lat, elev, name)
     if sat:
         sats = satellite_events(sat, ts0, ts1, 20, lon, lat, elev,  -6, sat_mag)
         draw_all_sats(sats, lon, lat, elev, name)
@@ -628,6 +736,7 @@ def main():
     sat_mag = 5
     op = False
     ort = None
+    tageb = False
     start = datetime.now().astimezone().replace(second=0, minute=0)
     for i, arg in enumerate(sys.argv):
         if arg == "-dur":
@@ -639,11 +748,13 @@ def main():
             start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone()
         if arg == "-ort":
             ort = sys.argv[i+1]
+        if arg == "-tb":
+            tageb = True
 
     plt.rcParams['figure.max_open_warning'] = 200 # Warnung unterdrücken
     for lon, lat, elev, name, sat_mag in readConfig():
         if ort  == None or ort == name:
-            calsky(start, start+timedelta(hours = dur),lon,lat,elev,name, sat, sat_mag = sat_mag)
+            calsky(start, start+timedelta(hours = dur),lon,lat,elev,name, sat, sat_mag = sat_mag, tageb = tageb)
 
 if __name__ == "__main__":
     main()

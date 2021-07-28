@@ -43,3 +43,5 @@ Ohne Parameter erzeugt es die Tabelle in [Name des Ortes].html im Unterordner `h
 ### Parameter -ort
 ``./skycalc.py -ort Brüssel`` berechnet _nur_ die Tabelle für Brüssel, auch wenn im .config mehrere Orte angegeben wurden.
 
+### Parameter -tb
+`./skycalc.py -tb` aktiviert die Erzeugung und Anzeige der Tagebogendiagramme.
