@@ -293,36 +293,45 @@ def satellite_events(satellites, ts0, ts1,
                 continue
 
             for j, name in enumerate(["Aufgang", "Kulmination", "Untergang"]):
-                e[name] = dict()
-                e[name]["ts"] = t[i+j]
-                e[name]["dt"] = t[i+j].utc_datetime()
-                e[name]["mag"] = mag(e[name]["ts"], e["satellite"], lon, lat, elev)
-                e[name]["altaz"] = e["diff"].at(e[name]["ts"]).altaz()
-                e[name]["Distanz"] = e["diff"].at(e[name]["ts"]).distance()
-                e[name]["Geschwindigkeit"] = e["diff"].at(e[name]["ts"]).speed()
-                e[name]["Name"] = name
+                s = dict()
+                s["ts"] = t[i+j]
+                s["dt"] = t[i+j].utc_datetime()
+                s["mag"] = mag(s["ts"], e["satellite"], lon, lat, elev)
+                s["altaz"] = e["diff"].at(s["ts"]).altaz()
+                s["Distanz"] = e["diff"].at(s["ts"]).distance()
+                s["Geschwindigkeit"] = e["diff"].at(s["ts"]).speed()
+                s["Name"] = name
+                e[name] = s
 
             for name, test,  delta in zip(["Erscheint", "Verschwindet"],
                                           ["Aufgang", "Untergang"],
                                           [timedelta(seconds=1), timedelta(seconds=-1)]):
                 if not e["diff"].at(e[test]["ts"]).is_sunlit(EPH):
                     ti = e[test]["ts"].utc_datetime()
+                    abbr = False
                     while not e["diff"].at(ts.from_datetime(ti)).is_sunlit(EPH):
-                        ti += delta*10
-                    while e["diff"].at(ts.from_datetime(ti)).is_sunlit(EPH):
-                        ti -= delta
-                    e[name] = dict()
-                    e[name]["dt"] = ti
-                    e[name]["ts"] = ts.from_datetime(ti)
+                        ti += delta
+                        if ti > e["Untergang"]["dt"] or ti < e["Aufgang"]["dt"]:
+                            abbr = True
+                            print("Sat nicht beleuchtet")
+                            break
+                    if abbr:
+                        continue
+
+                    s = dict()
+                    s["dt"] = ti
+                    s["ts"] = ts.from_datetime(ti)
                     try:
-                        e[name]["mag"] = float(mag(e[name]["ts"], e["satellite"], lon, lat, elev))
+                        s["mag"] = float(mag(s["ts"], e["satellite"], lon, lat, elev))
                     except:
-                        e[name]["mag"] = None
-                    e[name]["altaz"] = e["diff"].at(e[name]["ts"]).altaz()
-                    e[name]["mag"] = mag(e[name]["ts"], e["satellite"], lon, lat, elev)
-                    e[name]["Distanz"] = e["diff"].at(e[name]["ts"]).distance()
-                    e[name]["Geschwindigkeit"] = e["diff"].at(e[name]["ts"]).speed()
-                    e[name]["Name"] = name
+                        s["mag"] = None
+                    s["altaz"] = e["diff"].at(s["ts"]).altaz()
+                    s["mag"] = mag(s["ts"], e["satellite"], lon, lat, elev)
+                    s["Distanz"] = e["diff"].at(s["ts"]).distance()
+                    s["Geschwindigkeit"] = e["diff"].at(s["ts"]).speed()
+                    s["Name"] = name
+
+                    e[name] = s
 
             if min([(e[s]["mag"] if isinstance(e[s]["mag"], float) else 99 ) if isinstance(e[s], dict) else 99 for s in e]) < max_mag:
                 events.append(e)
