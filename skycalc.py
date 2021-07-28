@@ -394,7 +394,6 @@ def satellite_events(satellites, ts0, ts1,
                         ti += delta
                         if ti > e["Untergang"]["dt"] or ti < e["Aufgang"]["dt"]:
                             abbr = True
-                            print("Sat nicht beleuchtet")
                             break
                     if abbr:
                         continue
