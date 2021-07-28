@@ -38,7 +38,7 @@ Ohne Parameter erzeugt es die Tabelle in [Name des Ortes].html im Unterordner `h
 `./skycalc.py -sat` aktiviert die Berechnung und Anzeige von Satellitenüberflügen. Standartmäßig ist das deaktiviert.
 
 ### Parameter -ort
-``./skycalc.py -ort Brüssel`` berechnet _nur_ die Tabelle für Brüssel, auch wenn im .config mehrere Orte angegeben wurden.
+``./skycalc.py -ort Brüssel`` berechnet _nur_ die Tabelle für Brüssel, auch wenn im .config mehrere Orte angegeben wurden. Normalerweise werden alle Orte erstellt.
 
 ### Parameter -tb
 `./skycalc.py -tb` aktiviert die Erzeugung und Anzeige der Tagebogendiagramme.
