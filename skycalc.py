@@ -213,9 +213,9 @@ def sat_darstell(sat)->str:
 
 def planet_col(name:str)->str:
     pc = {
-        "Sun":"#ffaa00", "Moon":"#666666", "Mercury":"#632100", "Venus":"#9cf",
-        "Mars":"#cf1a17", "Jupiter":"#a36314", "Saturn":"#a5a845", 
-        "Uranus":"#484", "Neptune":"#448"
+        "Sun":"#fa0", "Moon":"#888", "Mercury":"#840", "Venus":"#88f",
+        "Mars":"#f40", "Jupiter":"#cc8", "Saturn":"#884", 
+        "Uranus":"#484", "Neptune":"#44c"
     }
     return pc[name.capitalize().split("_")[0]]
     
@@ -281,7 +281,7 @@ def plot_tagebogen(ts0, ts1, lon:float, lat:float, elev:float, name:str)->None:
     plt.savefig(f'{PATH}/tmp/{name}/Tagebogen-{dt0.strftime("%Y-%m-%d-%H")}.png')
 
 def tagebogen(ts0, lon:float, lat:float, elev:float, name:str):
-    dt0 = ts0.utc_datetime()
+    dt0 = ts0.utc_datetime().astimezone()
     dname = f"{PATH}/tmp/{name}/Tagebogen-{dt0.strftime('%Y-%m-%d-%H')}.png"
     if not os.path.exists(dname):
         ts1 = ts.from_datetime(dt0+timedelta(hours = 24))
