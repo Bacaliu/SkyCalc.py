@@ -245,6 +245,9 @@ def draw_all_sats(events, lon:float, lat:float, elev:float, name:str)->None:
     if not os.path.exists(f"{PATH}/tmp"):
         print("Erstelle Hilfsordner für die Bilder")
         os.mkdir(f"{PATH}/tmp")
+    if not os.path.exists(f"{PATH}/tmp/{name}"):
+        print("Erstelle Ordner für", name)
+        os.mkdir(f"{PATH}/tmp/{name}")
     for i, e in tqdm(enumerate(events), desc = "erzeuge Grafiken", total = len(events)):
         fig = plt.figure()
         ax = fig.add_subplot(polar = True)
@@ -258,7 +261,7 @@ def draw_all_sats(events, lon:float, lat:float, elev:float, name:str)->None:
         draw_sat_überflug(ax, e, lon, lat, elev, tick = timedelta(seconds = 20))
         ax.grid()
         plt.tight_layout()
-        plt.savefig(f"{PATH}/tmp/sat{name}{e['index']}.png")
+        plt.savefig(f"{PATH}/tmp/{name}/sat{e['index']}.png")
         plt.cla()
 
 
@@ -517,7 +520,7 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, 
         rows[i]["html"] = html_row(
             ptime(rows[i]["dt"]),
             sat_darstell(ev["satellite"]),
-            f'''<img src="{PATH}/tmp/sat{name}{ev['index']}.png" height="90" align="right">{"".join(part["text"] for part in parts)}'''.replace("\n", ""))
+            f'''<img src="{PATH}/tmp/{name}/sat{ev['index']}.png" height="90" align="right">{"".join(part["text"] for part in parts)}'''.replace("\n", ""))
     return rows
 
 ###############################################################################
