@@ -1,4 +1,4 @@
-# SkyCalc.py
+ SkyCalc.py
 Achtung: Das Skript ist noch nicht fertig. Es kann sich jederzeit die Nuterschnittstelle und der Umfang ändern.
 
 SkyCalc entstand aus dem Mangel einer guten Alternative von Calsky weil jenes seinen Dienst einstellte. Daher habe ich mich optisch auch sehr stark daran orientiert. Die Berechnungen werden durch Pythons Skyfield modul durchgeführt.
@@ -11,7 +11,7 @@ Die Links der Satelliten führen auf deren jeweiligen Informationsseiten von hea
 ```bash
 chmod +x skycalc.py
 ```
-Dadurch wird die Datei ausführbar und ```./skycalc.py``` startet das Skript. Anderenfalls muss es jedesmal mit ```python skycalc.py``` gestartet werden was schlicht unpraktischer ist.
+Dadurch wird die Datei ausführbar und `./skycalc.py` startet das Skript. Anderenfalls muss es jedesmal mit `python skycalc.py` gestartet werden was schlicht unpraktischer ist.
 
 ## Konfigurationsdatei
 In `.config` im gleichen ordner werden für jeden Ort seine Daten angegeben.Das sind Länge, Breite und Höhe. Für jeden Ort wird in eckigen Klammern sein Name geschrieben und darunter in beliebiger Reihenfolge `lat` (östliche Länge), `lon` (nördliche Breite), `elev` (höhe über NN in Metern) und `sat-m` (Mindesthelligkeit der Satelliten). Werden mehrere Orte angegeben werden auch immer alle berechnet! Das kann gerade bei aktiver Satellitenberechnung länger dauern.
@@ -36,9 +36,6 @@ Ohne Parameter erzeugt es die Tabelle in [Name des Ortes].html im Unterordner `h
 
 ### Parameter -sat
 `./skycalc.py -sat` aktiviert die Berechnung und Anzeige von Satellitenüberflügen. Standartmäßig ist das deaktiviert.
-
-### Parameter -sat-mag [float]
-`./skycalc.py -sat-mag 4` aktiviert die Berechnung und Anzeige von Satellitenüberflügen UND setzt die Helligkeit nach der gefiltert wird auf 4 magnituden. Satelliten, die während des Überfluges immer dunkler sind werden also nicht geplottet und nicht dargestellt. Standartmäßig ist diese Grenze bei 5.
 
 ### Parameter -ort
 ``./skycalc.py -ort Brüssel`` berechnet _nur_ die Tabelle für Brüssel, auch wenn im .config mehrere Orte angegeben wurden.

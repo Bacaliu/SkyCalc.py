@@ -732,17 +732,12 @@ def listOrte():
 def main():
     sat = (VISUAL if "-sat" in sys.argv else False)
     dur = 24
-    sat_mag = 5
-    op = False
     ort = None
     tageb = False
     start = datetime.now().astimezone().replace(second=0, minute=0)
     for i, arg in enumerate(sys.argv):
         if arg == "-dur":
             dur = int(sys.argv[i+1])
-        if arg == "-sat-mag":
-            sat_mag = float(sys.argv[i+1])
-            sat = VISUAL
         if arg == "-start":
             start = datetime.strptime(sys.argv[i+1], "%Y-%m-%d-%H").astimezone()
         if arg == "-ort":
