@@ -185,7 +185,7 @@ def planet_emoji(name:str)->str:
          "saturn":"&#x2644",
          "uranus":"&#x26E2",
          "neptune":"&#x2646"}
-    return big_emoji(s[name.split('_')[0].lower()])
+    return f'<span style="font-size:200%;color:{planet_col(name)}"'+big_emoji(s[name.split('_')[0].lower()])+'</span>'
 
 def planet_darstell(name:str)->str:
     return f'{planet_emoji(name)}<a href ="{planet_url(name.lower())}" target="_blank">{name.split("_")[0].capitalize()}</a>'
