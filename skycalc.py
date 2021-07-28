@@ -145,20 +145,20 @@ def satcol(ts0, satellite, lon:float, lat:float, elev:float)->tuple:
 ##
 ## SONNE
 ##
-def sonne_emoji(helligkeit:int)->str:
+def sun_emoji(helligkeit:int)->str:
     loe = ["&#x1F30C;", "&#x1F303;", "&#x1F306;", "&#x1F307;", "&#x2600;&#xFE0F;"]
     return big_emoji(loe[helligkeit])
 
-def sonne_darstell(helligkeit:int)->str:
+def sun_darstell(helligkeit:int)->str:
     if helligkeit == 3:
-        name = "Sonne"
+        name = "Sun"
     else:
         name = "Dämmerung"
-    return f'{sonne_emoji(helligkeit)}<a href="{planet_url("sun")}" target="_blank">{name}'
+    return f'{sun_emoji(helligkeit)}<a href="{planet_url("sun")}" target="_blank">{name}'
 ##
 ## MOND
 ##
-def mond_emoji(phase:float)->str:
+def moon_emoji(phase:float)->str:
     for s, p in zip(["&#127761;", "&#127762;", "&#127763;",
         "&#127764;", "&#127765;", "&#127766;", "&#127767;", "&#127768;"],
         range(0, 360, 45)):
@@ -166,11 +166,11 @@ def mond_emoji(phase:float)->str:
              return big_emoji(s)
     return big_emoji("&#127761")
 
-def mond_url()->str:
+def moon_url()->str:
     return "https://theskylive.com/moon-info"
 
-def mond_darstell(ts)->str:
-    return f'{mond_emoji(planetenphase(ts, "Moon"))}<a href="{mond_url()}" target = "_blank">Mond</a>'
+def moon_darstell(ts)->str:
+    return f'{moon_emoji(planetenphase(ts, "Moon"))}<a href="{moon_url()}" target = "_blank">Moon</a>'
 ##
 ## PLANETEN
 ##
@@ -445,7 +445,7 @@ def tagebogen_html(ts0, ts1, lon:float, lat:float, elev:float, name:str):
     return ret
 
 
-def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
+def moon_events(ts0, ts1, lon:float, lat:float, elev:float):
     def altF(ts):
         alt, az, ra, dec, dis = AltAzRaDecDis(EPH["MOON"], ts, lon, lat, elev)
         return alt.degrees
@@ -480,7 +480,7 @@ def mond_events(ts0, ts1, lon:float, lat:float, elev:float):
         this = dict()
         this["dt"] = ti.utc_datetime()
         this["html"] = html_row(ptime(ti.utc_datetime()),
-                       mond_darstell(ti),
+                       moon_darstell(ti),
                     f"<b>{yi}</b>~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}~~{'<b>' if k else ''}alt:~{runde(alt.degrees, 0, 3)}º{'</b>' if k else ''}<br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%<br>RA:~{ra}~~DEC:~{dec}")
         ret.append(this)
 
@@ -529,7 +529,7 @@ def planeten_events(ts0, ts1, lon:float, lat:float, elev:float):
     return ret
 
 
-def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
+def sun_events(ts0, ts1, lon:float, lat:float, elev:float):
     dämmerungen = [
         "Nacht", "Astronomische~Dämmerung", "Nautische~Dämmerung",
         "Bürgerliche~Dämmerung", "Tag"
@@ -556,25 +556,25 @@ def sonne_events(ts0, ts1, lon:float, lat:float, elev:float):
         this = dict()
         this["dt"] = t.utc_datetime()
         this["html"] = "<tr>"
-        if previous_e < e: #Sonnenaufgang
+        if previous_e < e: #Sunnaufgang
             if e >= 4:
                 this["html"] = html_row(ptime(t.utc_datetime()),
-                    f"{sonne_darstell(e-1)}",
+                    f"{sun_darstell(e-1)}",
                     f"<b>Aufgang</b>~~~~~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
-                    f"{sonne_darstell(e-1)}",
-                    f"<b>{dämmerungen[e]}</b>~~{dämbesch[1][e]}<br>Sonnenhöhe:~{runde(alt.degrees, 0, 3)}º")
+                    f"{sun_darstell(e-1)}",
+                    f"<b>{dämmerungen[e]}</b>~~{dämbesch[1][e]}<br>Sunnhöhe:~{runde(alt.degrees, 0, 3)}º")
 
-        else: #Sonnenuntergang
+        else: #Sunnuntergang
             if e >= 3:
                 this["html"] = html_row(ptime(t.utc_datetime()),
-                f"{sonne_darstell(e)}",
+                f"{sun_darstell(e)}",
                 f"<b>Untergang</b>~~~~az:~{runde(az.degrees, 0, 3)}º~{rich(az.degrees)}<br>RA:~{ra}~~DEC:~{dec}")
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
-                f"{sonne_darstell(e)}",
-                f"<b>{dämmerungen[e+1]}</b>~~{dämbesch[0][e+1]}<br>Sonnenhöhe:~{runde(alt.degrees, 0, 3)}º")
+                f"{sun_darstell(e)}",
+                f"<b>{dämmerungen[e+1]}</b>~~{dämbesch[0][e+1]}<br>Sunnhöhe:~{runde(alt.degrees, 0, 3)}º")
         previous_e = e
 
         this["html"] += "</tr>"
@@ -610,7 +610,7 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, 
                     parts[-1]["text"] += f"{'<b>' if e['Name'] == 'Kulmination' else ''}h:~{runde(e['altaz'][0].degrees, 0, 3)}º{'</b>' if e['Name'] == 'Kulmination' else ''}"
                 if e["Name"] == "Kulmination":
                     parts[-1]["text"] += f"""<br>~~Distanz:~{round(e['Distanz'].km, 1)}km~~Geschw.:~{round(e['Geschwindigkeit'].km_per_s, 1)}km/s~~
-                    Sonne:~{round(ortH.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
+                    Sun:~{round(ortH.at(ev["Kulmination"]["ts"]).observe(EPH["SUN"]).apparent().altaz()[0].degrees, 1)}º"""
                 parts[-1]["text"] += "<br>"
 
         parts.sort(key = lambda x: x["dt"])
@@ -628,7 +628,7 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, 
 ###############################################################################
 
 def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:str="table",
-        sat = None, sat_mag = 4 , mond:bool = True, planeten:bool = True, sonne:bool = True, tageb = False):
+        sat = None, sat_mag = 4 , moon:bool = True, planeten:bool = True, sun:bool = True, tageb = False):
     
     print(f"rechne {name} bei {lon}|{lat}")
     if not os.path.exists(f"{PATH}/tmp"):
@@ -644,12 +644,12 @@ def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:st
         sats = satellite_events(sat, ts0, ts1, 20, lon, lat, elev,  -6, sat_mag)
         draw_all_sats(sats, lon, lat, elev, name)
         tab += sat_events_to_html(sats, lon, lat, elev, sat_mag, name)
-    if mond:
-        tab += mond_events(ts0, ts1, lon, lat, elev)
+    if moon:
+        tab += moon_events(ts0, ts1, lon, lat, elev)
     if planeten:
         tab += planeten_events(ts0, ts1, lon, lat, elev)
-    if sonne:
-        tab += sonne_events(ts0, ts1, lon, lat, elev)
+    if sun:
+        tab += sun_events(ts0, ts1, lon, lat, elev)
 
     tab.sort(key = lambda x: x["dt"])
 

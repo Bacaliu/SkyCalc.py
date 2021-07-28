@@ -1,4 +1,4 @@
- SkyCalc.py
+SkyCalc.py
 Achtung: Das Skript ist noch nicht fertig. Es kann sich jederzeit die Nuterschnittstelle und der Umfang ändern.
 
 SkyCalc entstand aus dem Mangel einer guten Alternative von Calsky weil jenes seinen Dienst einstellte. Daher habe ich mich optisch auch sehr stark daran orientiert. Die Berechnungen werden durch Pythons Skyfield modul durchgeführt.
