@@ -140,7 +140,7 @@ def satcol(ts0, satellite, lon:float, lat:float, elev:float)->tuple:
     except:
         return (0.5, 0.5, 0.5)
 
-    return (mix(m, 0, 6)/6, mix(6-m, 0, 6)/6, mix(-m, 0, 4)/4)
+    return ((mix(m, 0, 6)/6)**0.5, (mix(6-m, 0, 6)/6)**0.5, mix(-m, 0, 4)/4)
 
 ##
 ## SONNE
