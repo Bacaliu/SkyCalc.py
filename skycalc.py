@@ -48,7 +48,7 @@ def position(lon:float, lat:float, elev:float):
     return ortG, ortH
 
 def ptime(dt:datetime)->str:
-    return dt.astimezone().strftime("%Hh%Mm%Ss")
+    return dt.astimezone().strftime("%Y-%m-%d<br>%Hh%Mm%Ss")
 
 def runde(zahl:float, n:int, m:int=0)->str:
     # rundet die Zahl zahl auf n stellen und füllt mit Leerzeichen auf m Stellen auf.
@@ -422,6 +422,29 @@ def satellite_events(satellites, ts0, ts1,
 ## HTML
 ###############################################################################
 
+def konjunktion_opposition(ts0, ts1, lon:float, lat:float, elev:float):
+    ret = list()
+    for pname in ["Mars", "Jupiter_barycenter", "Saturn_barycenter", "Uranus_barycenter", "Neptune_barycenter"]:
+        f = almanac.oppositions_conjunctions(EPH, EPH[pname])
+        t, y = almanac.find_discrete(ts0, ts1, f)
+        for ti, yi in zip(t, y):
+            try:
+                m = planetary_magnitude(ortH.at(ti).observe(EPH[f'{pname}']))
+                m = "<b>"+str(runde(m, 1, 4))+" mag</b>"
+            except:
+                m = f"~~?~~mag"
+            alt, az, ra, dec, dis = AltAzRaDecDis(EPH[pname], ti, lon, lat, elev)
+            ereignis = ("Opposition" if yi == 1 else "Konjunktion")
+            d = dict()
+            d["dt"] = ti.utc_datetime()
+            d["html"] = html_row(
+                ti.utc_datetime().strftime("%Y-%m-%d<br>%Hh%Mm%Ss"),
+                planet_darstell(pname),
+                f"<b>{ereignis}~~{m}</b><br>RA:~{ra}~~DEC:~{dec}"
+                )
+            ret.append(d)
+    return ret
+
 def tagebogen_html(ts0, ts1, lon:float, lat:float, elev:float, name:str):
     dt0 = ts0.utc_datetime().astimezone()
     dt1 = ts1.utc_datetime().astimezone()
@@ -652,6 +675,8 @@ def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:st
         tab += planeten_events(ts0, ts1, lon, lat, elev)
     if sun:
         tab += sun_events(ts0, ts1, lon, lat, elev)
+
+    tab += konjunktion_opposition(ts0, ts1, lon, lat, elev)
 
     tab.sort(key = lambda x: x["dt"])
 
