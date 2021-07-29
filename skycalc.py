@@ -627,7 +627,7 @@ def sun_events(ts0, ts1, lon:float, lat:float, elev:float):
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                     f"{sun_darstell(e-1)}",
-                    f"<b>{dämmerungen[e]}</b>~~{dämbesch[1][e]}<br>Sunnhöhe:~{runde(alt.degrees, 0, 3)}º")
+                    f"<b>{dämmerungen[e]}</b>~~{dämbesch[1][e]}<br>alt:~{runde(alt.degrees, 0, 3)}º")
 
         else: #Sunnuntergang
             if e >= 3:
@@ -637,7 +637,7 @@ def sun_events(ts0, ts1, lon:float, lat:float, elev:float):
             else:
                 this["html"] = html_row(ptime(t.utc_datetime()),
                 f"{sun_darstell(e)}",
-                f"<b>{dämmerungen[e+1]}</b>~~{dämbesch[0][e+1]}<br>Sunnhöhe:~{runde(alt.degrees, 0, 3)}º")
+                f"<b>{dämmerungen[e+1]}</b>~~{dämbesch[0][e+1]}<br>alt:~{runde(alt.degrees, 0, 3)}º")
         previous_e = e
 
         this["html"] += "</tr>"
