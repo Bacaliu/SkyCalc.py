@@ -457,7 +457,7 @@ def elongation(ts0, ts1, lon:float, lat:float, elev:float):
 
 def konjunktion_opposition(ts0, ts1, lon:float, lat:float, elev:float):
     ret = list()
-    for pname in ["Mars", "Jupiter_barycenter", "Saturn_barycenter", "Uranus_barycenter", "Neptune_barycenter"]:
+    for pname in ["Mars", "Jupiter_barycenter", "Saturn_barycenter", "Uranus_barycenter", "Neptune_barycenter", "Venus", "Mercury"]:
         f = almanac.oppositions_conjunctions(EPH, EPH[pname])
         t, y = almanac.find_discrete(ts0, ts1, f)
         for ti, yi in zip(t, y):
@@ -468,7 +468,10 @@ def konjunktion_opposition(ts0, ts1, lon:float, lat:float, elev:float):
                 m = f"~~?~~mag"
             alt, az, ra, dec, dis = AltAzRaDecDis(EPH[pname], ti, lon, lat, elev)
             phase = planetenphase(ti, pname)
-            ereignis = ("Opposition~" if yi == 1 else "Konjunktion")
+            if pname in ["Venus", "Mercury"]:
+                ereignis = "obere Konjunktion" if yi == 1 else "untere Konjunktion"
+            else:
+                ereignis = ("Opposition~" if yi == 1 else "Konjunktion")
             d = dict()
             d["dt"] = ti.utc_datetime()
             d["html"] = html_row(
