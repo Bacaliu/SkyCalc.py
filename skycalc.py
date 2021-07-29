@@ -424,6 +424,7 @@ def satellite_events(satellites, ts0, ts1,
 
 def elongation(ts0, ts1, lon:float, lat:float, elev:float):
     ret = list()
+    ortG, ortH = position(lon, lat, elev)
     for pname in ["Venus", "Mercury"]:
         def elongation_at(t):
             e = EPH["EARTH"].at(t)
@@ -457,6 +458,7 @@ def elongation(ts0, ts1, lon:float, lat:float, elev:float):
 
 def konjunktion_opposition(ts0, ts1, lon:float, lat:float, elev:float):
     ret = list()
+    ortG, ortH = position(lon, lat, elev)
     for pname in ["Mars", "Jupiter_barycenter", "Saturn_barycenter", "Uranus_barycenter", "Neptune_barycenter", "Venus", "Mercury"]:
         f = almanac.oppositions_conjunctions(EPH, EPH[pname])
         t, y = almanac.find_discrete(ts0, ts1, f)
@@ -665,7 +667,7 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, 
                 else:
                     continue
                 parts[-1]["dt"] = e["dt"]
-                parts[-1]["text"] = f"""<b>{e['Name']}{SPACE*(13-len(e['Name']))}{ptime(e['dt'])}{"</b>" if not hell else ""}~~{m_str}mag{"</b>" if hell else ""}
+                parts[-1]["text"] = f"""<b>{e['Name']}{SPACE*(13-len(e['Name']))}{e['dt'].strftime("%Hh%Mm%Ss")}{"</b>" if not hell else ""}~~{m_str}mag{"</b>" if hell else ""}
                                     ~az:{runde(e['altaz'][1].degrees, 0, 4)}º~{rich(e['altaz'][1].degrees)}~~"""
                 if nicht_horizont:
                     parts[-1]["text"] += f"{'<b>' if e['Name'] == 'Kulmination' else ''}h:~{runde(e['altaz'][0].degrees, 0, 3)}º{'</b>' if e['Name'] == 'Kulmination' else ''}"
