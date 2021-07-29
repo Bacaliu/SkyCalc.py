@@ -432,7 +432,7 @@ def elongation(ts0, ts1, lon:float, lat:float, elev:float):
             return s.separation_from(p).degrees
         elongation_at.step_days = 15
 
-        t, y = find_maxima(ts0, ts1, elongation_at)
+        t, y = searchlib.find_maxima(ts0, ts1, elongation_at)
         for ti, yi in zip(t, y):
             try:
                 m = planetary_magnitude(ortH.at(ti).observe(EPH[f'{pname}']))
@@ -446,12 +446,12 @@ def elongation(ts0, ts1, lon:float, lat:float, elev:float):
             is_east = (plon.degrees-slon.degrees)%360<180
             direction = "östlich" if is_east else "westlich"
             d = dict()
+            phase = planetenphase(ti, pname)
             d["dt"] = ti.utc_datetime()
             d["html"] = html_row(
                 ti.utc_datetime().strftime("%Y-%m-%d<br>%Hh%Mm%Ss"),
                 planet_darstell(pname),
-                f"<b>{direction}e~Elongation:~{round(yi, 1)}º~~{m}</b><br>RA:~{ra}~~DEC:~{dec}"
-                )
+                f"<b>{direction}e~Elongation:~{round(yi, 1)}º</b><br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%~~{m}<br>RA:~{ra}~~DEC:~{dec}")
             ret.append(d)
     return ret 
 
@@ -467,14 +467,14 @@ def konjunktion_opposition(ts0, ts1, lon:float, lat:float, elev:float):
             except:
                 m = f"~~?~~mag"
             alt, az, ra, dec, dis = AltAzRaDecDis(EPH[pname], ti, lon, lat, elev)
-            ereignis = ("Opposition" if yi == 1 else "Konjunktion")
+            phase = planetenphase(ti, pname)
+            ereignis = ("Opposition~" if yi == 1 else "Konjunktion")
             d = dict()
             d["dt"] = ti.utc_datetime()
             d["html"] = html_row(
                 ti.utc_datetime().strftime("%Y-%m-%d<br>%Hh%Mm%Ss"),
                 planet_darstell(pname),
-                f"<b>{ereignis}~~{m}</b><br>RA:~{ra}~~DEC:~{dec}"
-                )
+                f"<b>{ereignis}</b><br>Phase:~{runde(phase, 1, 5)}º~~Beleuchtet:~{runde(min(phase, 360-phase)/1.8, 1, 5)}%~~{m}<br>RA:~{ra}~~DEC:~{dec}")
             ret.append(d)
     return ret
 
@@ -685,8 +685,7 @@ def sat_events_to_html(events, lon:float, lat:float, elev:float, sat_mag:float, 
 ## 
 ###############################################################################
 
-def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:str="table",
-        sat = None, sat_mag = 4 , moon:bool = True, planeten:bool = True, sun:bool = True, tageb = False):
+def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:str="table", sat = None, sat_mag = 4, tageb = False):
     
     print(f"rechne {name} bei {lon}|{lat}")
     if not os.path.exists(f"{PATH}/tmp"):
@@ -702,14 +701,12 @@ def calsky(dt0:datetime, dt1:datetime, lon:float, lat:float, elev:float, name:st
         sats = satellite_events(sat, ts0, ts1, 20, lon, lat, elev,  -6, sat_mag)
         draw_all_sats(sats, lon, lat, elev, name)
         tab += sat_events_to_html(sats, lon, lat, elev, sat_mag, name)
-    if moon:
-        tab += moon_events(ts0, ts1, lon, lat, elev)
-    if planeten:
-        tab += planeten_events(ts0, ts1, lon, lat, elev)
-    if sun:
-        tab += sun_events(ts0, ts1, lon, lat, elev)
 
+    tab += moon_events(ts0, ts1, lon, lat, elev)
+    tab += planeten_events(ts0, ts1, lon, lat, elev)
+    tab += sun_events(ts0, ts1, lon, lat, elev)
     tab += konjunktion_opposition(ts0, ts1, lon, lat, elev)
+    tab += elongation(ts0, ts1, lon, lat, elev)
 
     tab.sort(key = lambda x: x["dt"])
 
