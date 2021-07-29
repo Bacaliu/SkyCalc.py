@@ -422,6 +422,39 @@ def satellite_events(satellites, ts0, ts1,
 ## HTML
 ###############################################################################
 
+def elongation(ts0, ts1, lon:float, lat:float, elev:float):
+    ret = list()
+    for pname in ["Venus", "Mercury"]:
+        def elongation_at(t):
+            e = EPH["EARTH"].at(t)
+            s = e.observe(EPH["SUN"]).apparent()
+            p = e.observe(EPH[pname]).apparent()
+            return s.separation_from(p).degrees
+        elongation_at.step_days = 15
+
+        t, y = find_maxima(ts0, ts1, elongation_at)
+        for ti, yi in zip(t, y):
+            try:
+                m = planetary_magnitude(ortH.at(ti).observe(EPH[f'{pname}']))
+                m = "<b>"+str(runde(m, 1, 4))+" mag</b>"
+            except:
+                m = f"~~?~~mag"
+            alt, az, ra, dec, dis = AltAzRaDecDis(EPH[pname], ti, lon, lat, elev)
+            e = EPH["EARTH"].at(ti)
+            _, slon, _ = e.observe(EPH["SUN"]).apparent().frame_latlon(ecliptic_frame)
+            _, plon, _ = e.observe(EPH[pname]).apparent().frame_latlon(ecliptic_frame)
+            is_east = (plon.degrees-slon.degrees)%360<180
+            direction = "östlich" if is_east else "westlich"
+            d = dict()
+            d["dt"] = ti.utc_datetime()
+            d["html"] = html_row(
+                ti.utc_datetime().strftime("%Y-%m-%d<br>%Hh%Mm%Ss"),
+                planet_darstell(pname),
+                f"<b>{direction}e~Elongation:~{round(yi, 1)}º~~{m}</b><br>RA:~{ra}~~DEC:~{dec}"
+                )
+            ret.append(d)
+    return ret 
+
 def konjunktion_opposition(ts0, ts1, lon:float, lat:float, elev:float):
     ret = list()
     for pname in ["Mars", "Jupiter_barycenter", "Saturn_barycenter", "Uranus_barycenter", "Neptune_barycenter"]:
